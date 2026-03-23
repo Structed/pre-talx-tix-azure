@@ -8,8 +8,12 @@ return await Deployment.RunAsync(() =>
     var prefix = config.Require("prefix");
     var pretixImageTag = config.Get("pretixImageTag") ?? "stable";
     var pretalxImageTag = config.Get("pretalxImageTag") ?? "latest";
-    var pretixUrl = config.Get("pretixUrl") ?? "";
-    var pretalxUrl = config.Get("pretalxUrl") ?? "";
+    var pretixCustomDomain = config.Get("pretixCustomDomain");
+    var pretalxCustomDomain = config.Get("pretalxCustomDomain");
+    var pretixUrl = config.Get("pretixUrl")
+        ?? (pretixCustomDomain is not null ? $"https://{pretixCustomDomain}" : "");
+    var pretalxUrl = config.Get("pretalxUrl")
+        ?? (pretalxCustomDomain is not null ? $"https://{pretalxCustomDomain}" : "");
     var smtpHost = config.Get("smtpHost") ?? "";
     var smtpPort = config.GetInt32("smtpPort") ?? 587;
     var smtpUser = config.Get("smtpUser") ?? "";
@@ -54,6 +58,7 @@ return await Deployment.RunAsync(() =>
         SmtpUser = smtpUser,
         SmtpPassword = smtpPassword,
         MailFrom = mailFrom,
+        CustomDomain = pretixCustomDomain,
     });
 
     // 8. Pretalx — call for papers & scheduling
@@ -76,15 +81,21 @@ return await Deployment.RunAsync(() =>
         SmtpUser = smtpUser,
         SmtpPassword = smtpPassword,
         MailFrom = mailFrom,
+        CustomDomain = pretalxCustomDomain,
     });
 
+    // Outputs — FQDN is the CNAME target; URL uses custom domain when configured
     return new Dictionary<string, object?>
     {
         ["resourceGroupName"] = rg.Name,
-        ["pretixFqdn"] = pretix.Fqdn,
-        ["pretalxFqdn"] = pretalx.Fqdn,
+        ["pretixCnameTarget"] = pretix.Fqdn,
+        ["pretalxCnameTarget"] = pretalx.Fqdn,
         ["postgresServerFqdn"] = db.ServerFqdn,
-        ["pretixUrl"] = pretix.Fqdn.Apply(fqdn => $"https://{fqdn}"),
-        ["pretalxUrl"] = pretalx.Fqdn.Apply(fqdn => $"https://{fqdn}"),
+        ["pretixUrl"] = pretixCustomDomain is not null
+            ? Output.Create($"https://{pretixCustomDomain}")
+            : pretix.Fqdn.Apply(fqdn => $"https://{fqdn}"),
+        ["pretalxUrl"] = pretalxCustomDomain is not null
+            ? Output.Create($"https://{pretalxCustomDomain}")
+            : pretalx.Fqdn.Apply(fqdn => $"https://{fqdn}"),
     };
 });

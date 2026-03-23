@@ -95,3 +95,11 @@ Both `PretixContainerApp.cs` and `PretalxContainerApp.cs` define private helpers
 ### Deployment scripts
 
 Scripts in `Scripts/` are PowerShell. `Deploy.ps1` handles first-time setup; `Update.ps1` changes image tags and runs `pulumi up`; `InitApps.ps1` runs post-deploy migrations via `az containerapp exec`.
+
+### Custom domains (two-phase deployment)
+
+Custom domains are optional, configured via `pretixCustomDomain` / `pretalxCustomDomain` Pulumi config. When set, the container app files create a `ManagedCertificate` (CNAME-validated) and bind it via `IngressArgs.CustomDomains`. When not set, the apps use default ACA FQDNs.
+
+`SiteUrl` is auto-derived from the custom domain (e.g., `tickets.example.com` → `https://tickets.example.com`) unless `pretixUrl` / `pretalxUrl` is explicitly set in config.
+
+The ingress args are built separately to conditionally add `CustomDomains` only when a cert exists — this avoids nullable warnings with `InputList<T>`.

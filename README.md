@@ -47,10 +47,6 @@ pulumi config set azure-native:location westeurope
 # Resource name prefix (lowercase, no special chars)
 pulumi config set prefix godotfest
 
-# Your public URLs (set after you know the ACA FQDNs or if using custom domains)
-pulumi config set pretixUrl https://tickets.example.com
-pulumi config set pretalxUrl https://cfp.example.com
-
 # Email sender address
 pulumi config set mailFrom noreply@example.com
 ```
@@ -114,16 +110,48 @@ Update to a new pretix or pretalx version with zero downtime:
 
 ## Custom Domains
 
-Azure Container Apps supports custom domains with managed TLS certificates.
+Custom domains use ACA managed TLS certificates with CNAME validation. This is a two-step process.
 
-1. Add a CNAME record pointing your domain to the ACA FQDN
-2. Configure the custom domain in Azure Portal → Container Apps → Custom domains
-3. Update the app URL:
+### Step 1: Deploy without custom domains
 
 ```powershell
-pulumi config set pretixUrl https://tickets.yourdomain.com
+.\Scripts\Deploy.ps1
+```
+
+Note the CNAME targets from the output:
+
+```powershell
+pulumi stack output pretixCnameTarget   # e.g. godotfest-pretix.nicedesert-abc123.westeurope.azurecontainerapps.io
+pulumi stack output pretalxCnameTarget  # e.g. godotfest-pretalx.nicedesert-abc123.westeurope.azurecontainerapps.io
+```
+
+### Step 2: Set up DNS records
+
+At your DNS provider, create CNAME records:
+
+| Record | Type | Target |
+|--------|------|--------|
+| `tickets.yourdomain.com` | CNAME | _(pretixCnameTarget from above)_ |
+| `talks.yourdomain.com` | CNAME | _(pretalxCnameTarget from above)_ |
+
+Wait for DNS propagation (typically a few minutes).
+
+### Step 3: Enable custom domains
+
+```powershell
+pulumi config set pretixCustomDomain tickets.yourdomain.com
+pulumi config set pretalxCustomDomain talks.yourdomain.com
 pulumi up
 ```
+
+Pulumi will provision managed TLS certificates and bind the custom domains. The `pretixUrl` and `pretalxUrl` outputs will automatically use your custom domains.
+
+### Yearly events
+
+Both apps are multi-tenant — you don't need new infrastructure per year. Just create events inside the apps:
+
+- **Pretix**: `https://tickets.yourdomain.com/<organizer>/<year>/`
+- **Pretalx**: `https://talks.yourdomain.com/<event-slug>/`
 
 ## Database Backups
 
@@ -141,8 +169,10 @@ Automated daily backups are enabled (7-day retention). For on-demand backups:
 | `prefix` | Yes | — | Resource name prefix |
 | `pretixImageTag` | No | `stable` | Pretix Docker image tag |
 | `pretalxImageTag` | No | `latest` | Pretalx Docker image tag |
-| `pretixUrl` | No | — | Pretix public URL |
-| `pretalxUrl` | No | — | Pretalx public URL |
+| `pretixCustomDomain` | No | — | Custom domain for pretix (e.g. `tickets.yourdomain.com`) |
+| `pretalxCustomDomain` | No | — | Custom domain for pretalx (e.g. `talks.yourdomain.com`) |
+| `pretixUrl` | No | auto | Pretix public URL (auto-derived from custom domain) |
+| `pretalxUrl` | No | auto | Pretalx public URL (auto-derived from custom domain) |
 | `mailFrom` | No | `noreply@example.com` | Email sender address |
 | `smtpHost` | No | — | SMTP server hostname |
 | `smtpPort` | No | `587` | SMTP server port |

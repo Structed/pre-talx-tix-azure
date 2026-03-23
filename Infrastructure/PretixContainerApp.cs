@@ -24,6 +24,7 @@ public record PretixContainerAppArgs
     public required string SmtpUser { get; init; }
     public required Output<string> SmtpPassword { get; init; }
     public required string MailFrom { get; init; }
+    public string? CustomDomain { get; init; }
 }
 
 public record PretixResult(ContainerApp App, Output<string> Fqdn);
@@ -35,6 +36,40 @@ public static class PretixContainerApp
         var appName = $"{args.Prefix}-pretix";
         var redisHost = args.Redis.HostName;
 
+        // Optional: managed TLS certificate for custom domain
+        ManagedCertificate? cert = null;
+        if (args.CustomDomain is not null)
+        {
+            cert = new ManagedCertificate($"{appName}-cert", new ManagedCertificateArgs
+            {
+                EnvironmentName = args.Environment.Name,
+                ResourceGroupName = args.ResourceGroup.Name,
+                ManagedCertificateName = $"{appName}-cert",
+                Properties = new ManagedCertificatePropertiesArgs
+                {
+                    SubjectName = args.CustomDomain,
+                    DomainControlValidation = ManagedCertificateDomainControlValidation.CNAME,
+                },
+            });
+        }
+
+        var ingress = new IngressArgs
+        {
+            External = true,
+            TargetPort = 80,
+            Transport = IngressTransportMethod.Auto,
+            AllowInsecure = false,
+        };
+        if (cert is not null)
+        {
+            ingress.CustomDomains = new[] { new CustomDomainArgs
+            {
+                Name = args.CustomDomain!,
+                CertificateId = cert.Id,
+                BindingType = BindingType.SniEnabled,
+            }};
+        }
+
         var app = new ContainerApp(appName, new ContainerAppArgs
         {
             ContainerAppName = appName,
@@ -42,13 +77,7 @@ public static class PretixContainerApp
             ManagedEnvironmentId = args.Environment.Id,
             Configuration = new ConfigurationArgs
             {
-                Ingress = new IngressArgs
-                {
-                    External = true,
-                    TargetPort = 80,
-                    Transport = IngressTransportMethod.Auto,
-                    AllowInsecure = false,
-                },
+                Ingress = ingress,
                 Secrets = new[]
                 {
                     new SecretArgs { Name = "db-password", Value = args.DbPassword },
