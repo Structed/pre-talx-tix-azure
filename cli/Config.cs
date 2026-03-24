@@ -1,7 +1,12 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Spectre.Console;
 
 namespace PreTalxTix.Cli;
+
+[JsonSerializable(typeof(AppConfig))]
+[JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+internal partial class AppConfigJsonContext : JsonSerializerContext;
 
 public sealed class AppConfig
 {
@@ -15,25 +20,19 @@ public sealed class AppConfig
 
     private static readonly string ConfigPath = Path.Combine(ConfigDir, "config.json");
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
-
     public static AppConfig Load()
     {
         if (!File.Exists(ConfigPath))
             return new AppConfig();
 
         var json = File.ReadAllText(ConfigPath);
-        return JsonSerializer.Deserialize<AppConfig>(json, JsonOptions) ?? new AppConfig();
+        return JsonSerializer.Deserialize(json, AppConfigJsonContext.Default.AppConfig) ?? new AppConfig();
     }
 
     public void Save()
     {
         Directory.CreateDirectory(ConfigDir);
-        var json = JsonSerializer.Serialize(this, JsonOptions);
+        var json = JsonSerializer.Serialize(this, AppConfigJsonContext.Default.AppConfig);
         File.WriteAllText(ConfigPath, json);
     }
 

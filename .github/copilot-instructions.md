@@ -1,5 +1,20 @@
 # Copilot Instructions
 
+## Build
+
+```powershell
+# Build the CLI project
+dotnet build cli/
+
+# Publish all platforms (Nuke)
+dotnet run --project build -- Publish
+
+# Full release build including .zip/.deb/.rpm (requires nfpm on PATH)
+dotnet run --project build -- Package
+```
+
+There are no tests or linters configured in this project.
+
 ## Architecture
 
 This is a **docker-compose** project that deploys [pretix](https://pretix.eu/) (ticketing) and [pretalx](https://pretalx.com/) (CfP/scheduling) to a single VPS (optimized for Hetzner).
@@ -79,3 +94,18 @@ Structure:
 - `Menu.cs` — Spectre.Console selection prompt, mirrors manage.sh menu
 
 The CLI proxies all commands to `manage.sh` on the remote server — it's a cross-platform SSH client wrapper. The bash scripts (`manage.sh` + `scripts/`) remain the single source of truth for server-side operations.
+
+### Build system (`build/`)
+
+Uses **Nuke.Build** (.NET build automation). The build project is at `build/_build.csproj`.
+
+**Targets** (in dependency order):
+- `Clean` → removes `output/` and `cli/bin/`, `cli/obj/`
+- `Restore` → `dotnet restore` on `cli/PreTalxTix.Cli.csproj`
+- `Compile` → `dotnet build` (default target)
+- `Publish` → self-contained single-file publish for `win-x64` and `linux-x64` into `output/publish/{rid}/`
+- `Package` → creates `output/packages/ptx-win-x64.zip`, `.deb`, and `.rpm` (requires `nfpm` on PATH)
+
+**Linux packaging**: `nfpm.yaml` at repo root defines `.deb` and `.rpm` package metadata. The `VERSION` env var sets the package version.
+
+**Release workflow**: `.github/workflows/release.yml` triggers on `v*` tag push. Publishes binaries, creates `.zip`/`.deb`/`.rpm`, and uploads to a GitHub Release.

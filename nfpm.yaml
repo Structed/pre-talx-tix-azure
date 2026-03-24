@@ -1,0 +1,24 @@
+name: ptx
+arch: amd64
+platform: linux
+version: ${VERSION}
+maintainer: Pretix+Pretalx VPS project
+description: Cross-platform CLI for managing Pretix + Pretalx on a VPS
+homepage: https://github.com/your-org/pre-talx-tix-azure
+license: MIT
+
+contents:
+  - src: ./output/publish/linux-x64/ptx
+    dst: /usr/local/bin/ptx
+    file_info:
+      mode: 0755
+
+overrides:
+  deb:
+    depends:
+      - libc6
+      - libssl3 | libssl1.1
+  rpm:
+    depends:
+      - glibc
+      - openssl-libs

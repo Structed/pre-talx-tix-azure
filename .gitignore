@@ -10,7 +10,14 @@ backups/
 # .NET
 cli/bin/
 cli/obj/
+build/bin/
+build/obj/
+output/
 *.user
+
+# Nuke
+.nuke/temp/
+.tmp/
 
 # OS
 Thumbs.db

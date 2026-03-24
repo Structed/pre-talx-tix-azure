@@ -42,11 +42,13 @@ Requires [.NET 8+ SDK](https://dotnet.microsoft.com/download):
 cd cli
 dotnet run -- help
 
-# Or publish a single-file binary
-dotnet publish cli/ -c Release -r win-x64 -p:PublishSingleFile=true -p:SelfContained=true
-dotnet publish cli/ -c Release -r linux-x64 -p:PublishSingleFile=true -p:SelfContained=true
-dotnet publish cli/ -c Release -r osx-x64 -p:PublishSingleFile=true -p:SelfContained=true
+# Or build all platforms at once (Nuke build)
+dotnet run --project build -- Publish
+
+# Binaries land in output/publish/win-x64/ and output/publish/linux-x64/
 ```
+
+Pre-built binaries are available on the [Releases](../../releases) page (`.zip` for Windows, `.deb` for Debian/Ubuntu, `.rpm` for Fedora/RHEL).
 
 ### On-server bash CLI (`manage.sh`)
 
