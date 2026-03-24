@@ -1,23 +1,12 @@
-## .NET
-bin/
-obj/
-*.user
-*.suo
-*.cache
-*.dll
-*.exe
-*.pdb
+.env
+backups/
 
-## Pulumi
-.pulumi/
-
-## IDE
-.vs/
-.vscode/
+# IDE
 .idea/
+.vscode/
 *.swp
 *~
 
-## OS
+# OS
 Thumbs.db
 .DS_Store

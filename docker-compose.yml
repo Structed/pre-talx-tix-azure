@@ -1,0 +1,126 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    env_file: .env
+    depends_on:
+      - pretix
+      - pretalx
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 128mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pretix:
+    image: pretix/standalone:${PRETIX_IMAGE_TAG:-stable}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PRETIX_PRETIX_URL: https://tickets.${DOMAIN}
+      PRETIX_PRETIX_DATADIR: /data
+      PRETIX_PRETIX_TRUST_X_FORWARDED_FOR: "on"
+      PRETIX_PRETIX_TRUST_X_FORWARDED_PROTO: "on"
+
+      PRETIX_DATABASE_BACKEND: postgresql
+      PRETIX_DATABASE_HOST: postgres
+      PRETIX_DATABASE_PORT: "5432"
+      PRETIX_DATABASE_NAME: pretix
+      PRETIX_DATABASE_USER: ${DB_USER}
+      PRETIX_DATABASE_PASSWORD: ${DB_PASSWORD}
+      PRETIX_DATABASE_SSLMODE: disable
+
+      PRETIX_REDIS_LOCATION: redis://redis:6379/0
+      PRETIX_REDIS_SESSIONS: "true"
+      PRETIX_CELERY_BROKER: redis://redis:6379/1
+      PRETIX_CELERY_BACKEND: redis://redis:6379/2
+
+      PRETIX_MAIL_FROM: ${MAIL_FROM}
+      PRETIX_MAIL_HOST: ${SMTP_HOST}
+      PRETIX_MAIL_PORT: ${SMTP_PORT:-587}
+      PRETIX_MAIL_USER: ${SMTP_USER}
+      PRETIX_MAIL_PASSWORD: ${SMTP_PASSWORD}
+      PRETIX_MAIL_TLS: "on"
+
+      SECRET_KEY: ${PRETIX_SECRET_KEY}
+    volumes:
+      - pretix_data:/data
+
+  pretalx:
+    image: pretalx/standalone:${PRETALX_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PRETALX_SITE_URL: https://talks.${DOMAIN}
+      PRETALX_FILESYSTEM_DATA: /data
+
+      PRETALX_DATABASE_BACKEND: postgresql
+      PRETALX_DATABASE_HOST: postgres
+      PRETALX_DATABASE_PORT: "5432"
+      PRETALX_DATABASE_NAME: pretalx
+      PRETALX_DATABASE_USER: ${DB_USER}
+      PRETALX_DATABASE_PASSWORD: ${DB_PASSWORD}
+
+      PRETALX_REDIS_LOCATION: redis://redis:6379/3
+      PRETALX_CELERY_BROKER: redis://redis:6379/4
+      PRETALX_CELERY_BACKEND: redis://redis:6379/5
+
+      PRETALX_MAIL_FROM: ${MAIL_FROM}
+      PRETALX_MAIL_HOST: ${SMTP_HOST}
+      PRETALX_MAIL_PORT: ${SMTP_PORT:-587}
+      PRETALX_MAIL_USER: ${SMTP_USER}
+      PRETALX_MAIL_PASSWORD: ${SMTP_PASSWORD}
+
+      SECRET_KEY: ${PRETALX_SECRET_KEY}
+    volumes:
+      - pretalx_data:/data
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  redis_data:
+  pretix_data:
+  pretalx_data:

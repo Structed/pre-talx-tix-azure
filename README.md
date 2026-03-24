@@ -1,232 +1,171 @@
-# Pretix + Pretalx on Azure
+# Pretix + Pretalx on a VPS
 
-Fully automated, cost-optimized deployment of [pretix](https://pretix.eu/) (ticketing) and [pretalx](https://pretalx.com/) (call for papers & scheduling) on Azure Container Apps using Pulumi (C#).
+Self-hosted [pretix](https://pretix.eu/) (ticketing) and [pretalx](https://pretalx.com/) (call for papers & scheduling) via docker-compose. Optimized for a single cheap VPS (e.g., Hetzner CX33 at ~€5.49/mo).
 
-## Architecture
+## What You Get
 
-| Component | Azure Service | Est. Cost/mo |
-|-----------|--------------|-------------|
-| Pretix web + worker | Azure Container Apps (0.5 vCPU / 1 Gi) | ~$15 |
-| Pretalx web + worker | Azure Container Apps (0.5 vCPU / 1 Gi) | ~$15 |
-| Redis (shared cache) | Azure Container Apps (0.25 vCPU / 0.5 Gi) | ~$10 |
-| PostgreSQL | Flexible Server (Burstable B1ms) | ~$13 |
-| Persistent storage | Azure Files (5 GB × 2) | ~$1 |
-| Logging | Log Analytics (30-day retention) | ~$1 |
-| **Total** | | **~$55** |
+| Service | Image | Purpose |
+|---------|-------|---------|
+| **Caddy** | `caddy:2-alpine` | Reverse proxy + automatic Let's Encrypt TLS |
+| **PostgreSQL** | `postgres:16-alpine` | Shared database (pretix + pretalx DBs) |
+| **Redis** | `redis:7-alpine` | Shared cache + Celery task queue |
+| **Pretix** | `pretix/standalone` | Ticketing at `tickets.yourdomain.com` |
+| **Pretalx** | `pretalx/standalone` | CfP/scheduling at `talks.yourdomain.com` |
+
+Estimated cost: **~€5-7/month** (Hetzner CX33: 4 vCPU, 8 GB RAM, 80 GB SSD).
 
 ## Prerequisites
 
-- [.NET SDK 8.0+](https://dotnet.microsoft.com/download)
-- [Pulumi CLI](https://www.pulumi.com/docs/install/)
-- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
-- An Azure subscription
-- A Pulumi account (free tier works)
+- A VPS running Ubuntu 22.04+ or Debian 12+ (2+ GB RAM minimum, 4+ GB recommended)
+- A domain with DNS access
+- SSH access to the server
 
 ## Quick Start
 
-### 1. Clone and configure
+### 1. Set up DNS
 
-```powershell
+Point two A records to your server's IP address:
+
+```
+tickets.yourdomain.com → <server-ip>
+talks.yourdomain.com   → <server-ip>
+```
+
+### 2. Clone and configure
+
+SSH into your server, then:
+
+```bash
 git clone <this-repo>
 cd pre-talx-tix-azure
 
-# Login to Azure and Pulumi
-az login
-pulumi login
+# Install Docker if needed
+sudo ./scripts/setup.sh
 
-# Create a stack
-pulumi stack init dev
+# Create your configuration
+cp .env.example .env
+nano .env  # Set DOMAIN, SMTP settings
 ```
 
-### 2. Set required configuration
+### 3. Deploy
 
-```powershell
-# Azure region
-pulumi config set azure-native:location westeurope
-
-# Resource name prefix (lowercase, no special chars)
-pulumi config set prefix godotfest
-
-# Email sender address
-pulumi config set mailFrom noreply@example.com
+```bash
+./scripts/deploy.sh
 ```
 
-### 3. Set optional SMTP configuration
+This will:
+- Generate secure random passwords for the database and app secret keys
+- Pull all container images
+- Start everything
 
-```powershell
-pulumi config set smtpHost smtp.example.com
-pulumi config set smtpPort 587
-pulumi config set smtpUser your-smtp-user
-pulumi config set --secret smtpPassword your-smtp-password
+### 4. Initialize (first time only)
+
+Wait ~30 seconds for services to start, then:
+
+```bash
+docker compose exec pretix pretix migrate
+docker compose exec pretix pretix rebuild
+docker compose exec pretalx pretalx migrate
+docker compose exec pretalx pretalx rebuild
 ```
 
-### 4. Deploy
+### 5. Access your apps
 
-```powershell
-.\Scripts\Deploy.ps1
+- **Pretix**: `https://tickets.yourdomain.com`
+- **Pretalx**: `https://talks.yourdomain.com`
+
+Both apps have web-based setup wizards on first visit.
+
+## Updating Containers
+
+```bash
+# Pull latest images and restart
+./scripts/update.sh
+
+# Pin a specific version
+./scripts/update.sh --pretix 2025.1.0
+
+# Update both
+./scripts/update.sh --pretix 2025.1.0 --pretalx 2025.1.0
 ```
 
-Or manually:
+## Backups
 
-```powershell
-dotnet build
-pulumi up
+### Manual backup
+
+```bash
+./scripts/backup.sh
 ```
 
-### 5. Initialize apps (first deploy only)
+Saves gzipped SQL dumps to `backups/` with timestamps.
 
-```powershell
-.\Scripts\InitApps.ps1
+### Automatic daily backups
+
+```bash
+./scripts/backup.sh --install-cron
 ```
 
-This runs database migrations and rebuilds static files.
+Runs at 3:00 AM daily. Backups older than 30 days are auto-deleted.
 
-### 6. Access your apps
+### Restore from backup
 
-After deployment, Pulumi outputs the URLs:
-
-```powershell
-pulumi stack output pretixUrl
-pulumi stack output pretalxUrl
+```bash
+./scripts/restore.sh backups/pretix_20260324-030000.sql.gz pretix
 ```
 
-## Updating Container Images
+## Yearly Events
 
-Update to a new pretix or pretalx version with zero downtime:
-
-```powershell
-# Update pretix to a specific version
-.\Scripts\Update.ps1 -PretixTag 2025.1.0
-
-# Update pretalx
-.\Scripts\Update.ps1 -PretalxTag 2025.1.0
-
-# Update both at once
-.\Scripts\Update.ps1 -PretixTag 2025.1.0 -PretalxTag 2025.1.0
-
-# Skip confirmation prompt
-.\Scripts\Update.ps1 -PretixTag stable -AutoApprove
-```
-
-## Custom Domains
-
-Custom domains use ACA managed TLS certificates with CNAME validation. This is a two-step process.
-
-### Step 1: Deploy without custom domains
-
-```powershell
-.\Scripts\Deploy.ps1
-```
-
-Note the CNAME targets from the output:
-
-```powershell
-pulumi stack output pretixCnameTarget   # e.g. godotfest-pretix.nicedesert-abc123.westeurope.azurecontainerapps.io
-pulumi stack output pretalxCnameTarget  # e.g. godotfest-pretalx.nicedesert-abc123.westeurope.azurecontainerapps.io
-```
-
-### Step 2: Set up DNS records
-
-At your DNS provider, create CNAME records:
-
-| Record | Type | Target |
-|--------|------|--------|
-| `tickets.yourdomain.com` | CNAME | _(pretixCnameTarget from above)_ |
-| `talks.yourdomain.com` | CNAME | _(pretalxCnameTarget from above)_ |
-
-Wait for DNS propagation (typically a few minutes).
-
-### Step 3: Enable custom domains
-
-```powershell
-pulumi config set pretixCustomDomain tickets.yourdomain.com
-pulumi config set pretalxCustomDomain talks.yourdomain.com
-pulumi up
-```
-
-Pulumi will provision managed TLS certificates and bind the custom domains. The `pretixUrl` and `pretalxUrl` outputs will automatically use your custom domains.
-
-### Yearly events
-
-Both apps are multi-tenant — you don't need new infrastructure per year. Just create events inside the apps:
+Both apps are multi-tenant — create new events in the web UI each year. No infrastructure changes needed:
 
 - **Pretix**: `https://tickets.yourdomain.com/<organizer>/<year>/`
 - **Pretalx**: `https://talks.yourdomain.com/<event-slug>/`
 
-## Database Backups
-
-Automated daily backups are enabled (7-day retention). For on-demand backups:
-
-```powershell
-.\Scripts\BackupDb.ps1
-```
-
 ## Configuration Reference
 
-| Key | Required | Default | Description |
-|-----|----------|---------|-------------|
-| `azure-native:location` | Yes | — | Azure region |
-| `prefix` | Yes | — | Resource name prefix |
-| `pretixImageTag` | No | `stable` | Pretix Docker image tag |
-| `pretalxImageTag` | No | `latest` | Pretalx Docker image tag |
-| `pretixCustomDomain` | No | — | Custom domain for pretix (e.g. `tickets.yourdomain.com`) |
-| `pretalxCustomDomain` | No | — | Custom domain for pretalx (e.g. `talks.yourdomain.com`) |
-| `pretixUrl` | No | auto | Pretix public URL (auto-derived from custom domain) |
-| `pretalxUrl` | No | auto | Pretalx public URL (auto-derived from custom domain) |
-| `mailFrom` | No | `noreply@example.com` | Email sender address |
-| `smtpHost` | No | — | SMTP server hostname |
-| `smtpPort` | No | `587` | SMTP server port |
-| `smtpUser` | No | — | SMTP username |
-| `smtpPassword` | No | — | SMTP password (secret) |
+All configuration is in `.env`:
 
-## Project Structure
-
-```
-├── Program.cs                              # Pulumi entry point
-├── Infrastructure/
-│   ├── ResourceGroupStack.cs               # Azure Resource Group
-│   ├── PostgreSqlStack.cs                  # PostgreSQL Flexible Server
-│   ├── StorageStack.cs                     # Azure Storage + File Shares
-│   ├── ContainerAppsEnvironmentStack.cs    # ACA environment + storage mounts
-│   ├── RedisContainerApp.cs                # Redis container (internal)
-│   ├── PretixContainerApp.cs               # Pretix container (external)
-│   └── PretalxContainerApp.cs              # Pretalx container (external)
-├── Helpers/
-│   ├── NamingConventions.cs                # Azure naming helpers
-│   └── SecretGenerator.cs                  # Random secret generation
-├── Scripts/
-│   ├── Deploy.ps1                          # First-time deployment
-│   ├── Update.ps1                          # Update container images
-│   ├── BackupDb.ps1                        # On-demand DB backup
-│   └── InitApps.ps1                        # Post-deploy initialization
-├── PreTalxTixAzure.csproj                  # .NET project
-├── Pulumi.yaml                             # Pulumi project config
-└── Pulumi.dev.yaml                         # Dev stack config
-```
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DOMAIN` | Yes | — | Your domain (e.g., `yourdomain.com`) |
+| `DB_USER` | No | `pretalxtix` | PostgreSQL username |
+| `DB_PASSWORD` | No | auto-generated | PostgreSQL password |
+| `PRETIX_SECRET_KEY` | No | auto-generated | Pretix secret key |
+| `PRETALX_SECRET_KEY` | No | auto-generated | Pretalx secret key |
+| `PRETIX_IMAGE_TAG` | No | `stable` | Pretix Docker image tag |
+| `PRETALX_IMAGE_TAG` | No | `latest` | Pretalx Docker image tag |
+| `MAIL_FROM` | Yes | — | Email sender address |
+| `SMTP_HOST` | Yes | — | SMTP server hostname |
+| `SMTP_PORT` | No | `587` | SMTP server port |
+| `SMTP_USER` | Yes | — | SMTP username |
+| `SMTP_PASSWORD` | Yes | — | SMTP password |
 
 ## Troubleshooting
 
-### Container won't start
-```powershell
-az containerapp logs show --name <prefix>-pretix --resource-group <prefix>-rg --type system
-az containerapp logs show --name <prefix>-pretix --resource-group <prefix>-rg --type console
+### Check service status
+```bash
+docker compose ps
+docker compose logs pretix --tail 50
+docker compose logs pretalx --tail 50
 ```
+
+### TLS certificate not working
+Caddy auto-provisions Let's Encrypt certs. Ensure:
+- DNS A records are pointing to the server
+- Ports 80 and 443 are open (`sudo ufw status`)
+- Check Caddy logs: `docker compose logs caddy`
 
 ### Database connection issues
-Verify the firewall rule allows Azure services:
-```powershell
-az postgres flexible-server firewall-rule list --resource-group <prefix>-rg --name <prefix>-pg
+```bash
+docker compose exec postgres psql -U pretalxtix -l
 ```
 
-### Check container app status
-```powershell
-az containerapp show --name <prefix>-pretix --resource-group <prefix>-rg --query "properties.runningStatus"
+### Restart everything
+```bash
+docker compose down && docker compose up -d
 ```
 
-## Destroying Resources
+## Destroying Everything
 
-To tear down all resources:
-```powershell
-pulumi destroy
-pulumi stack rm dev
+```bash
+docker compose down -v  # -v removes all data volumes
 ```

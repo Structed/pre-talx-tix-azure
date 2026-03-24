@@ -1,0 +1,7 @@
+tickets.{$DOMAIN} {
+    reverse_proxy pretix:80
+}
+
+talks.{$DOMAIN} {
+    reverse_proxy pretalx:80
+}

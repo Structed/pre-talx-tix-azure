@@ -1,0 +1,43 @@
+#!/bin/bash
+# Back up both PostgreSQL databases.
+# Usage:
+#   ./scripts/backup.sh                 # Run backup now
+#   ./scripts/backup.sh --install-cron  # Install daily 3 AM cron job
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
+
+# Install cron job if requested
+if [ "${1:-}" = "--install-cron" ]; then
+    CRON_CMD="0 3 * * * cd $PROJECT_DIR && ./scripts/backup.sh >> /var/log/pretalxtix-backup.log 2>&1"
+    (crontab -l 2>/dev/null | grep -v "pretalxtix-backup"; echo "$CRON_CMD") | crontab -
+    echo "Installed daily backup cron job (3:00 AM)."
+    echo "Logs: /var/log/pretalxtix-backup.log"
+    exit 0
+fi
+
+# Load .env for DB credentials
+set -a
+source .env
+set +a
+
+BACKUP_DIR="$PROJECT_DIR/backups"
+mkdir -p "$BACKUP_DIR"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+echo "[$(date)] Starting backup..."
+
+# Dump both databases
+for DB in pretix pretalx; do
+    BACKUP_FILE="$BACKUP_DIR/${DB}_${TIMESTAMP}.sql.gz"
+    docker compose exec -T postgres pg_dump -U "$DB_USER" "$DB" | gzip > "$BACKUP_FILE"
+    SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
+    echo "  $DB → $BACKUP_FILE ($SIZE)"
+done
+
+# Clean up backups older than 30 days
+find "$BACKUP_DIR" -name "*.sql.gz" -mtime +30 -delete 2>/dev/null || true
+
+echo "[$(date)] Backup complete."
