@@ -21,6 +21,8 @@ All configuration is via `.env` (copied from `.env.example`). Secrets are auto-g
 
 The primary user interface is `manage.sh` at the project root — interactive menu (no args) or subcommands (e.g., `./manage.sh status`). Supports remote management via `./manage.sh remote user@host [cmd]`.
 
+For cross-platform management from Windows/macOS/Linux, use the .NET CLI in `cli/` (see below).
+
 ## Conventions
 
 ### Redis DB index allocation
@@ -61,3 +63,19 @@ Two TLS modes controlled by `CLOUDFLARE_DNS_CHALLENGE` in `.env`:
 - **DNS challenge** (`true`) — custom Caddy image built from `caddy/Dockerfile` with cloudflare plugin. Uses `caddy/Caddyfile.dns`. Works with Cloudflare proxy on (orange-cloud).
 
 When DNS challenge is enabled, `deploy.sh` and `update.sh` use the compose override: `docker compose -f docker-compose.yml -f docker-compose.cloudflare.yml`.
+
+### .NET CLI (`cli/`)
+
+A cross-platform .NET 8 console app for remote server management. Runs on Windows, macOS, and Linux.
+
+- **Spectre.Console** for terminal UI (interactive menus, styled output)
+- **SSH.NET** for non-interactive remote commands (status, deploy, backup, etc.)
+- Falls back to native `ssh -t` for interactive commands (logs, shell, restore)
+
+Structure:
+- `Program.cs` — entry point, command dispatch (no args = interactive menu)
+- `Config.cs` — manages `~/.pretalxtix/config.json` (SSH host, key file, remote project dir)
+- `Remote.cs` — SSH execution (SSH.NET for commands, native ssh for TTY)
+- `Menu.cs` — Spectre.Console selection prompt, mirrors manage.sh menu
+
+The CLI proxies all commands to `manage.sh` on the remote server — it's a cross-platform SSH client wrapper. The bash scripts (`manage.sh` + `scripts/`) remain the single source of truth for server-side operations.

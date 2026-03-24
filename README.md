@@ -16,21 +16,46 @@ Estimated cost: **~€5-7/month** (Hetzner CX33: 4 vCPU, 8 GB RAM, 80 GB SSD).
 
 ## Management CLI
 
-Everything is managed through a single `./manage.sh` script:
+### Cross-platform .NET CLI (`ptx`)
+
+The primary management tool is a cross-platform .NET CLI that runs on **Windows, macOS, and Linux**. It manages your remote server over SSH.
+
+```bash
+# First-time setup — configure your server connection
+ptx connect root@your-server-ip
+
+# Then manage from anywhere
+ptx                      # Interactive menu (Spectre.Console UI)
+ptx status               # Service status + URLs
+ptx update               # Pull latest images + restart
+ptx logs pretix          # Tail pretix logs
+ptx backup               # Backup databases
+ptx help                 # All commands
+```
+
+#### Install the CLI
+
+Requires [.NET 8+ SDK](https://dotnet.microsoft.com/download):
+
+```bash
+# Run directly from the repo
+cd cli
+dotnet run -- help
+
+# Or publish a single-file binary
+dotnet publish cli/ -c Release -r win-x64 -p:PublishSingleFile=true -p:SelfContained=true
+dotnet publish cli/ -c Release -r linux-x64 -p:PublishSingleFile=true -p:SelfContained=true
+dotnet publish cli/ -c Release -r osx-x64 -p:PublishSingleFile=true -p:SelfContained=true
+```
+
+### On-server bash CLI (`manage.sh`)
+
+When SSHed into the server directly, use `manage.sh`:
 
 ```bash
 ./manage.sh              # Interactive menu
 ./manage.sh status       # Service status + URLs
-./manage.sh update       # Pull latest images + restart
-./manage.sh logs pretix  # Tail pretix logs
-./manage.sh backup       # Backup databases
 ./manage.sh help         # All commands
-```
-
-**Remote management** from your home PC:
-```bash
-./manage.sh remote root@your-server-ip          # Interactive menu over SSH
-./manage.sh remote root@your-server-ip status   # Direct command over SSH
 ```
 
 ## Prerequisites

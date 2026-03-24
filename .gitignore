@@ -7,6 +7,11 @@ backups/
 *.swp
 *~
 
+# .NET
+cli/bin/
+cli/obj/
+*.user
+
 # OS
 Thumbs.db
 .DS_Store
