@@ -126,6 +126,7 @@ public static class CloudInitBuilder
         // Install daily backup cron job
         sb.AppendLine("  - cd /opt/pretalxtix && bash scripts/backup.sh --install-cron");
 
-        return sb.ToString();
+        // Normalize to Unix line endings — cloud-init on Linux expects \n, not \r\n
+        return sb.ToString().Replace("\r\n", "\n");
     }
 }
