@@ -161,8 +161,9 @@ public sealed class Remote
             var keyPath = ExpandPath(_config.KeyFile);
             if (File.Exists(keyPath))
             {
-                authMethods.Add(new PrivateKeyAuthenticationMethod(user,
-                    new PrivateKeyFile(keyPath)));
+                var pkFile = TryLoadPrivateKey(keyPath);
+                if (pkFile != null)
+                    authMethods.Add(new PrivateKeyAuthenticationMethod(user, pkFile));
             }
         }
 
@@ -187,26 +188,43 @@ public sealed class Remote
             }
         }
 
-        // SSH agent forwarding (pageant on Windows, ssh-agent on Unix)
-        try
-        {
-            authMethods.Add(new PrivateKeyAuthenticationMethod(user,
-                new PrivateKeyFile[] { }));
-        }
-        catch
-        {
-            // No agent available
-        }
-
         if (authMethods.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No SSH keys found. Falling back to password auth.[/]");
+            AnsiConsole.MarkupLine("[yellow]No usable SSH keys found. Falling back to password auth.[/]");
             var password = AnsiConsole.Prompt(
                 new TextPrompt<string>("SSH password:").Secret());
             authMethods.Add(new PasswordAuthenticationMethod(user, password));
         }
 
         return new ConnectionInfo(hostname, 22, user, authMethods.ToArray());
+    }
+
+    private static PrivateKeyFile? TryLoadPrivateKey(string keyPath)
+    {
+        try
+        {
+            return new PrivateKeyFile(keyPath);
+        }
+        catch (Renci.SshNet.Common.SshPassPhraseNullOrEmptyException)
+        {
+            var passphrase = AnsiConsole.Prompt(
+                new TextPrompt<string>($"Passphrase for [green]{Path.GetFileName(keyPath)}[/]:")
+                    .Secret());
+            try
+            {
+                return new PrivateKeyFile(keyPath, passphrase);
+            }
+            catch (Exception ex)
+            {
+                AnsiConsole.MarkupLine($"[yellow]Could not load key {Path.GetFileName(keyPath)}:[/] {Markup.Escape(ex.Message)}");
+                return null;
+            }
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.MarkupLine($"[yellow]Could not load key {Path.GetFileName(keyPath)}:[/] {Markup.Escape(ex.Message)}");
+            return null;
+        }
     }
 
     private void EnsureConfigured()
