@@ -279,26 +279,22 @@ public static class Provision
 
     private static void SetConfig(string key, string value, bool secret = false)
     {
-        var args = secret
-            ? $"config set {key} --secret"
-            : $"config set {key} {value}";
+        var psi = new ProcessStartInfo
+        {
+            FileName = "pulumi",
+            WorkingDirectory = InfraDir,
+            UseShellExecute = false,
+        };
+        psi.ArgumentList.Add("config");
+        psi.ArgumentList.Add("set");
+        psi.ArgumentList.Add(key);
 
         if (secret)
         {
-            // For secrets, pipe the value via stdin to avoid shell exposure
-            var psi = new ProcessStartInfo
-            {
-                FileName = "pulumi",
-                WorkingDirectory = InfraDir,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-            };
-            psi.ArgumentList.Add("config");
-            psi.ArgumentList.Add("set");
-            psi.ArgumentList.Add(key);
             psi.ArgumentList.Add("--secret");
+            psi.RedirectStandardInput = true;
+            psi.RedirectStandardOutput = true;
+            psi.RedirectStandardError = true;
 
             using var proc = Process.Start(psi);
             if (proc != null)
@@ -310,7 +306,12 @@ public static class Provision
         }
         else
         {
-            RunPulumi($"config set {key} {value}");
+            // Value as a separate argument — handles spaces (e.g., SSH public keys)
+            psi.ArgumentList.Add("--");
+            psi.ArgumentList.Add(value);
+
+            using var proc = Process.Start(psi);
+            proc?.WaitForExit();
         }
     }
 
