@@ -14,13 +14,19 @@ public sealed class Remote
     }
 
     /// <summary>
-    /// Run a manage.sh subcommand via SSH.NET (non-interactive, streams output).
+    /// Run a manage.sh subcommand (non-interactive, streams output).
+    /// Prefers native ssh when an SSH agent is available (1Password, ssh-agent, Pageant).
+    /// Falls back to SSH.NET when no agent is detected and keys are unencrypted.
     /// </summary>
     public int RunCommand(string manageArgs)
     {
         EnsureConfigured();
-        var cmd = $"cd {_config.ProjectDir} && ./manage.sh {manageArgs}";
 
+        if (IsSshAgentAvailable())
+            return RunNativeSshCommand(manageArgs);
+
+        // Try SSH.NET for non-agent scenarios (unencrypted keys, password auth)
+        var cmd = $"cd {_config.ProjectDir} && ./manage.sh {manageArgs}";
         var (user, hostname) = _config.ParseHost();
 
         using var client = CreateSshClient(user, hostname);
@@ -28,10 +34,11 @@ public sealed class Remote
         {
             client.Connect();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            AnsiConsole.MarkupLine($"[red]SSH connection failed:[/] {Markup.Escape(ex.Message)}");
-            return 1;
+            // SSH.NET failed (encrypted key, no agent) — fall back to native ssh
+            AnsiConsole.MarkupLine("[grey]SSH.NET auth failed, falling back to native ssh...[/]");
+            return RunNativeSshCommand(manageArgs);
         }
 
         using var command = client.CreateCommand(cmd);
@@ -80,9 +87,52 @@ public sealed class Remote
     public int RunInteractive(string manageArgs)
     {
         EnsureConfigured();
+        return LaunchNativeSsh(manageArgs, interactive: true);
+    }
+
+    /// <summary>
+    /// Fetch the remote .env file to read DOMAIN for display purposes.
+    /// </summary>
+    public string? GetRemoteDomain()
+    {
+        EnsureConfigured();
+
+        if (IsSshAgentAvailable())
+            return GetRemoteDomainViaNativeSsh();
+
+        var (user, hostname) = _config.ParseHost();
+
+        try
+        {
+            using var client = CreateSshClient(user, hostname);
+            client.Connect();
+            using var cmd = client.RunCommand(
+                $"grep '^DOMAIN=' {_config.ProjectDir}/.env 2>/dev/null | cut -d= -f2");
+            var domain = cmd.Result.Trim();
+            return string.IsNullOrWhiteSpace(domain) || domain == "yourdomain.com" ? null : domain;
+        }
+        catch
+        {
+            return GetRemoteDomainViaNativeSsh();
+        }
+    }
+
+    /// <summary>
+    /// Run a non-interactive command via native ssh, streaming stdout/stderr.
+    /// Works with SSH agents (1Password, ssh-agent, Pageant).
+    /// </summary>
+    private int RunNativeSshCommand(string manageArgs)
+    {
+        return LaunchNativeSsh(manageArgs, interactive: false);
+    }
+
+    private int LaunchNativeSsh(string manageArgs, bool interactive)
+    {
         var remoteCmd = $"cd {_config.ProjectDir} && ./manage.sh {manageArgs}";
 
-        var sshArgs = new List<string> { "-t" };
+        var sshArgs = new List<string>();
+        if (interactive)
+            sshArgs.Add("-t");
 
         if (!string.IsNullOrWhiteSpace(_config.KeyFile))
         {
@@ -97,6 +147,8 @@ public sealed class Remote
         {
             FileName = "ssh",
             UseShellExecute = false,
+            RedirectStandardOutput = !interactive,
+            RedirectStandardError = !interactive,
         };
 
         foreach (var arg in sshArgs)
@@ -111,6 +163,28 @@ public sealed class Remote
                 return 1;
             }
 
+            if (!interactive)
+            {
+                // Stream stdout and stderr to console
+                var stdoutTask = Task.Run(() =>
+                {
+                    var buf = new char[4096];
+                    int read;
+                    while ((read = process.StandardOutput.Read(buf, 0, buf.Length)) > 0)
+                        Console.Out.Write(buf, 0, read);
+                });
+
+                var stderrTask = Task.Run(() =>
+                {
+                    var buf = new char[4096];
+                    int read;
+                    while ((read = process.StandardError.Read(buf, 0, buf.Length)) > 0)
+                        Console.Error.Write(buf, 0, read);
+                });
+
+                Task.WaitAll(stdoutTask, stderrTask);
+            }
+
             process.WaitForExit();
             return process.ExitCode;
         }
@@ -122,27 +196,63 @@ public sealed class Remote
         }
     }
 
-    /// <summary>
-    /// Fetch the remote .env file to read DOMAIN for display purposes.
-    /// </summary>
-    public string? GetRemoteDomain()
+    private string? GetRemoteDomainViaNativeSsh()
     {
-        EnsureConfigured();
-        var (user, hostname) = _config.ParseHost();
-
         try
         {
-            using var client = CreateSshClient(user, hostname);
-            client.Connect();
-            using var cmd = client.RunCommand(
-                $"grep '^DOMAIN=' {_config.ProjectDir}/.env 2>/dev/null | cut -d= -f2");
-            var domain = cmd.Result.Trim();
+            var remoteCmd = $"grep '^DOMAIN=' {_config.ProjectDir}/.env 2>/dev/null | cut -d= -f2";
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "ssh",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+
+            if (!string.IsNullOrWhiteSpace(_config.KeyFile))
+            {
+                psi.ArgumentList.Add("-i");
+                psi.ArgumentList.Add(ExpandPath(_config.KeyFile));
+            }
+
+            psi.ArgumentList.Add("-o");
+            psi.ArgumentList.Add("BatchMode=yes");
+            psi.ArgumentList.Add(_config.Host);
+            psi.ArgumentList.Add(remoteCmd);
+
+            using var process = Process.Start(psi);
+            if (process == null) return null;
+
+            var domain = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+
             return string.IsNullOrWhiteSpace(domain) || domain == "yourdomain.com" ? null : domain;
         }
         catch
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Detect if an SSH agent is available (1Password, ssh-agent, Pageant).
+    /// </summary>
+    private static bool IsSshAgentAvailable()
+    {
+        // Windows: 1Password and OpenSSH use a named pipe
+        if (OperatingSystem.IsWindows())
+        {
+            if (File.Exists(@"\\.\pipe\openssh-ssh-agent"))
+                return true;
+        }
+
+        // Unix: ssh-agent / 1Password set SSH_AUTH_SOCK
+        var authSock = Environment.GetEnvironmentVariable("SSH_AUTH_SOCK");
+        if (!string.IsNullOrWhiteSpace(authSock))
+            return true;
+
+        return false;
     }
 
     private SshClient CreateSshClient(string user, string hostname)
@@ -176,15 +286,9 @@ public sealed class Remote
             var keyPath = Path.Combine(sshDir, keyName);
             if (File.Exists(keyPath))
             {
-                try
-                {
-                    authMethods.Add(new PrivateKeyAuthenticationMethod(user,
-                        new PrivateKeyFile(keyPath)));
-                }
-                catch
-                {
-                    // Key might be passphrase-protected — skip, native ssh will handle it
-                }
+                var pkFile = TryLoadPrivateKey(keyPath);
+                if (pkFile != null)
+                    authMethods.Add(new PrivateKeyAuthenticationMethod(user, pkFile));
             }
         }
 
@@ -207,22 +311,12 @@ public sealed class Remote
         }
         catch (Renci.SshNet.Common.SshPassPhraseNullOrEmptyException)
         {
-            var passphrase = AnsiConsole.Prompt(
-                new TextPrompt<string>($"Passphrase for [green]{Path.GetFileName(keyPath)}[/]:")
-                    .Secret());
-            try
-            {
-                return new PrivateKeyFile(keyPath, passphrase);
-            }
-            catch (Exception ex)
-            {
-                AnsiConsole.MarkupLine($"[yellow]Could not load key {Path.GetFileName(keyPath)}:[/] {Markup.Escape(ex.Message)}");
-                return null;
-            }
+            // Key is encrypted — can't use via SSH.NET without agent support.
+            // Native ssh (with agent) will handle this instead.
+            return null;
         }
-        catch (Exception ex)
+        catch
         {
-            AnsiConsole.MarkupLine($"[yellow]Could not load key {Path.GetFileName(keyPath)}:[/] {Markup.Escape(ex.Message)}");
             return null;
         }
     }
