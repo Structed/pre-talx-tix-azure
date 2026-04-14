@@ -38,13 +38,13 @@ public static class Provision
 
         var vmSize = AnsiConsole.Ask("VM size:", "Standard_B2s");
 
-        // Optional: SMTP
-        var configureSMTP = AnsiConsole.Confirm("Configure SMTP (email) now?", false);
+        // SMTP (enabled by default — required for transactional emails)
+        var configureSMTP = AnsiConsole.Confirm("Configure SMTP (email) now?", true);
         string smtpHost = "", smtpUser = "", smtpPassword = "", mailFrom = "";
         int smtpPort = 587;
         if (configureSMTP)
         {
-            smtpHost = AnsiConsole.Ask<string>("SMTP host:");
+            smtpHost = AnsiConsole.Ask("SMTP host:", "smtp.azurecomm.net");
             smtpPort = AnsiConsole.Ask("SMTP port:", 587);
             smtpUser = AnsiConsole.Ask<string>("SMTP user:");
             smtpPassword = AnsiConsole.Prompt(
