@@ -24,6 +24,11 @@ public static class Provision
         // Gather configuration
         var domain = AnsiConsole.Ask<string>("Your [green]domain[/] (e.g., yourdomain.com):");
 
+        // Derive a resource name prefix from the domain (e.g., "godotfest.org" → "godotfest")
+        var defaultPrefix = domain.Split('.')[0].ToLowerInvariant();
+        defaultPrefix = System.Text.RegularExpressions.Regex.Replace(defaultPrefix, "[^a-z0-9-]", "");
+        var prefix = AnsiConsole.Ask("Azure resource name [green]prefix[/]:", defaultPrefix);
+
         var sshKeyPath = DetectSshKey();
         sshKeyPath = AnsiConsole.Ask("SSH public key file:", sshKeyPath);
         var sshPublicKey = ReadSshPublicKey(sshKeyPath);
@@ -66,6 +71,7 @@ public static class Provision
         var summaryTable = new Table().Border(TableBorder.Rounded);
         summaryTable.AddColumn("Setting");
         summaryTable.AddColumn("Value");
+        summaryTable.AddRow("Prefix", prefix);
         summaryTable.AddRow("Domain", domain);
         summaryTable.AddRow("Region", region);
         summaryTable.AddRow("VM Size", vmSize);
@@ -93,6 +99,7 @@ public static class Provision
 
         // Set config values
         SetConfig("azure-native:location", region);
+        SetConfig("pre-talx-tix:prefix", prefix);
         SetConfig("pre-talx-tix:domain", domain);
         SetConfig("pre-talx-tix:sshPublicKey", sshPublicKey);
         SetConfig("pre-talx-tix:vmSize", vmSize);
