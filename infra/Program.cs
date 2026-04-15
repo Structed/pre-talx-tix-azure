@@ -12,6 +12,7 @@ return await Deployment.RunAsync(() =>
     var pretixImageTag = config.Get("pretixImageTag") ?? "stable";
     var pretalxImageTag = config.Get("pretalxImageTag") ?? "latest";
     var repoUrl = config.Get("repoUrl") ?? "https://github.com/Structed/pre-talx-tix-azure.git";
+    var repoBranch = config.Get("repoBranch") ?? ""; // Empty = default branch
 
     // Optional config
     var cloudflareApiToken = config.Get("cloudflareApiToken") ?? "";
@@ -36,6 +37,7 @@ return await Deployment.RunAsync(() =>
     var cloudInit = CloudInitBuilder.Build(new CloudInitConfig
     {
         RepoUrl = repoUrl,
+        RepoBranch = repoBranch,
         Domain = domain,
         DbUser = Output.Create("pretalxtix"),
         DbPassword = secrets.DbPassword.Result,

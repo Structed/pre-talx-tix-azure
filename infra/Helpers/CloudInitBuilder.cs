@@ -6,6 +6,7 @@ namespace PreTalxTix.Infra.Helpers;
 public record CloudInitConfig
 {
     public required string RepoUrl { get; init; }
+    public string RepoBranch { get; init; } = ""; // Empty = default branch
     public required string Domain { get; init; }
     public required Output<string> DbUser { get; init; }
     public required Output<string> DbPassword { get; init; }
@@ -153,8 +154,9 @@ public static class CloudInitBuilder
 
         // Clone the repo (with retry for transient network issues)
         sb.Append("echo 'Cloning repository...'\n");
+        var branchArg = string.IsNullOrEmpty(cfg.RepoBranch) ? "" : $" -b {cfg.RepoBranch}";
         sb.Append("for attempt in 1 2 3; do\n");
-        sb.Append($"  if git clone {cfg.RepoUrl} /opt/pretalxtix; then\n");
+        sb.Append($"  if git clone{branchArg} {cfg.RepoUrl} /opt/pretalxtix; then\n");
         sb.Append("    echo 'Repository cloned successfully.'\n");
         sb.Append("    break\n");
         sb.Append("  fi\n");
