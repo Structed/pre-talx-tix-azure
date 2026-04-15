@@ -86,3 +86,15 @@ echo "Setting up Cloudflare DNS records (server IP: ${SERVER_IP})..."
 upsert_record "tickets.${DOMAIN}" "$SERVER_IP" "$PROXIED"
 upsert_record "talks.${DOMAIN}" "$SERVER_IP" "$PROXIED"
 echo "DNS records configured."
+
+# When using DNS challenge (proxied=true), set SSL mode to "full" so Cloudflare connects via HTTPS
+if [ "${CLOUDFLARE_DNS_CHALLENGE:-false}" = "true" ]; then
+    echo "Setting Cloudflare SSL mode to 'full'..."
+    curl -s -X PATCH \
+        "${CF_API}/zones/${CLOUDFLARE_ZONE_ID}/settings/ssl" \
+        -H "$AUTH_HEADER" \
+        -H "Content-Type: application/json" \
+        --data '{"value":"full"}' \
+        > /dev/null
+    echo "SSL mode set to 'full'."
+fi
