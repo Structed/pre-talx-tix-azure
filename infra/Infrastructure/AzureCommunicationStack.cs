@@ -41,9 +41,9 @@ public record AzureCommunicationArgs
 /// </summary>
 public static class AzureCommunicationStack
 {
-    // Contributor role - grants full access to manage resources
-    // Using this instead of "Communication and Email Service Owner" which may not exist in all subscriptions
-    private const string ContributorRoleId = "b24988ac-6180-42a0-ab88-20f7382dd24c";
+    // "Communication and Email Service Owner" built-in role
+    // Minimal role for sending email via ACS SMTP
+    private const string EmailOwnerRoleId = "09976791-48a7-449e-bb21-39d1a415f350";
 
     public static AzureCommunicationResult Create(AzureCommunicationArgs args)
     {
@@ -160,7 +160,7 @@ public static class AzureCommunicationStack
         // 8. Get current client config for subscription/tenant info
         var clientConfig = Pulumi.AzureNative.Authorization.GetClientConfig.Invoke();
 
-        // 9. Assign Contributor role to the service principal on the Communication Service
+        // 9. Assign "Communication and Email Service Owner" role to the service principal
         var roleAssignment = new RoleAssignment($"{args.Prefix}-email-role", new RoleAssignmentArgs
         {
             RoleAssignmentName = Guid.NewGuid().ToString(),
@@ -168,7 +168,7 @@ public static class AzureCommunicationStack
             PrincipalId = servicePrincipal.ObjectId,
             PrincipalType = PrincipalType.ServicePrincipal,
             RoleDefinitionId = clientConfig.Apply(c => 
-                $"/subscriptions/{c.SubscriptionId}/providers/Microsoft.Authorization/roleDefinitions/{ContributorRoleId}"),
+                $"/subscriptions/{c.SubscriptionId}/providers/Microsoft.Authorization/roleDefinitions/{EmailOwnerRoleId}"),
         });
 
         // 10. Build SMTP credentials
