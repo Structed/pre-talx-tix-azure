@@ -289,19 +289,7 @@ public static class CloudInitBuilder
             sb.Append($"docker compose exec -T -e DJANGO_SUPERUSER_EMAIL='{cfg.AdminEmail}' -e DJANGO_SUPERUSER_PASSWORD='{adminPassword}' -e PRETALX_INIT_ORGANISER_NAME='{cfg.OrganiserName}' -e PRETALX_INIT_ORGANISER_SLUG='{cfg.OrganiserSlug}' pretalx pretalx init --noinput || echo 'WARNING: Pretalx init failed (may already be initialized)'\n");
             sb.Append("\n");
             
-            // Write credentials to secure file
-            sb.Append("echo 'Saving admin credentials...'\n");
-            sb.Append("cat > /root/admin-credentials.txt << 'CREDENTIALS'\n");
-            sb.Append("PreTalxTix Admin Credentials\n");
-            sb.Append("============================\n");
-            sb.Append($"Email:    {cfg.AdminEmail}\n");
-            sb.Append($"Password: {adminPassword}\n");
-            sb.Append("\n");
-            sb.Append($"Pretix:   https://tickets.{cfg.Domain}/control/\n");
-            sb.Append($"Pretalx:  https://talks.{cfg.Domain}/orga/\n");
-            sb.Append("CREDENTIALS\n");
-            sb.Append("chmod 600 /root/admin-credentials.txt\n");
-            sb.Append("echo 'Admin credentials saved to /root/admin-credentials.txt'\n");
+            sb.Append("echo 'Admin accounts created successfully.'\n");
             sb.Append("\n");
         }
 

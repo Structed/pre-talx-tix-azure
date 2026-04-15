@@ -38,6 +38,9 @@ public static class Provision
 
         var vmSize = AnsiConsole.Ask("VM size:", "Standard_B2s");
 
+        // Admin account (for pretix/pretalx control panels)
+        var adminEmail = AnsiConsole.Ask<string>("Admin [green]email[/] (for pretix/pretalx login):");
+
         // SMTP (enabled by default — required for transactional emails)
         var configureSMTP = AnsiConsole.Confirm("Configure SMTP (email) now?", true);
         string smtpHost = "", smtpUser = "", smtpPassword = "", mailFrom = "";
@@ -49,7 +52,7 @@ public static class Provision
             smtpUser = AnsiConsole.Ask<string>("SMTP user:");
             smtpPassword = AnsiConsole.Prompt(
                 new TextPrompt<string>("SMTP password:").Secret());
-            mailFrom = AnsiConsole.Ask<string>("Mail from address:");
+            mailFrom = AnsiConsole.Ask("Mail from address:", adminEmail);
         }
 
         // Optional: Cloudflare
@@ -76,6 +79,7 @@ public static class Provision
         summaryTable.AddRow("Region", region);
         summaryTable.AddRow("VM Size", vmSize);
         summaryTable.AddRow("SSH Key", sshKeyPath);
+        summaryTable.AddRow("Admin Email", adminEmail);
         summaryTable.AddRow("SMTP", configureSMTP ? smtpHost : "[grey]not configured[/]");
         summaryTable.AddRow("Cloudflare", configureCloudflare ? "enabled" : "[grey]not configured[/]");
         AnsiConsole.Write(summaryTable);
@@ -103,6 +107,7 @@ public static class Provision
         SetConfig("pre-talx-tix:domain", domain);
         SetConfig("pre-talx-tix:sshPublicKey", sshPublicKey);
         SetConfig("pre-talx-tix:vmSize", vmSize);
+        SetConfig("pre-talx-tix:adminEmail", adminEmail);
 
         if (configureSMTP)
         {
@@ -180,6 +185,23 @@ public static class Provision
         AnsiConsole.MarkupLine($"  [green]Pretix:[/]  https://tickets.{domain}");
         AnsiConsole.MarkupLine($"  [green]Pretalx:[/] https://talks.{domain}");
         AnsiConsole.WriteLine();
+
+        // Display admin credentials
+        var adminPassword = GetPulumiOutput("adminPassword", showSecrets: true);
+        if (!string.IsNullOrWhiteSpace(adminPassword))
+        {
+            AnsiConsole.Write(new Rule("[yellow]Admin Credentials[/]").RuleStyle("yellow"));
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"  [green]Email:[/]    {adminEmail}");
+            AnsiConsole.MarkupLine($"  [green]Password:[/] {adminPassword}");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"  [green]Pretix Admin:[/]  https://tickets.{domain}/control/");
+            AnsiConsole.MarkupLine($"  [green]Pretalx Admin:[/] https://talks.{domain}/orga/");
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[grey]Save these credentials! They are stored encrypted in Pulumi state.[/]");
+            AnsiConsole.MarkupLine("[grey]Retrieve later with: pulumi stack output adminPassword --show-secrets[/]");
+            AnsiConsole.WriteLine();
+        }
 
         if (!configureCloudflare)
         {
@@ -322,7 +344,7 @@ public static class Provision
         }
     }
 
-    private static string GetPulumiOutput(string outputName)
+    private static string GetPulumiOutput(string outputName, bool showSecrets = false)
     {
         var psi = new ProcessStartInfo
         {
@@ -335,6 +357,8 @@ public static class Provision
         psi.ArgumentList.Add("stack");
         psi.ArgumentList.Add("output");
         psi.ArgumentList.Add(outputName);
+        if (showSecrets)
+            psi.ArgumentList.Add("--show-secrets");
 
         try
         {
