@@ -12,7 +12,9 @@ cd "$PROJECT_DIR"
 # Install cron job if requested
 if [ "${1:-}" = "--install-cron" ]; then
     CRON_CMD="0 3 * * * cd $PROJECT_DIR && ./scripts/backup.sh >> /var/log/pretalxtix-backup.log 2>&1"
-    (crontab -l 2>/dev/null | grep -v "pretalxtix-backup"; echo "$CRON_CMD") | crontab -
+    # Get existing crontab (ignore error if none exists), filter out old backup entries, add new one
+    # Note: grep -v returns 1 if no lines match, so we use || true to handle empty crontab
+    ( crontab -l 2>/dev/null || true ) | ( grep -v "pretalxtix-backup" || true ) | { cat; echo "$CRON_CMD"; } | crontab -
     echo "Installed daily backup cron job (3:00 AM)."
     echo "Logs: /var/log/pretalxtix-backup.log"
     exit 0

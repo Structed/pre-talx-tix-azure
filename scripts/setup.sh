@@ -42,8 +42,8 @@ fi
 
 # Enable automatic security updates
 if ! dpkg -l | grep -q unattended-upgrades; then
-    apt-get install -y -qq unattended-upgrades
-    dpkg-reconfigure -plow unattended-upgrades
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unattended-upgrades
+    DEBIAN_FRONTEND=noninteractive dpkg-reconfigure -plow unattended-upgrades
 fi
 
 echo ""

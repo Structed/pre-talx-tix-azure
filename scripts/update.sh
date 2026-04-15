@@ -7,6 +7,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_DIR"
 
+# Load .env for configuration
+if [ -f .env ]; then
+    set -a
+    source .env
+    set +a
+fi
+
 # Parse optional tag overrides
 while [[ $# -gt 0 ]]; do
     case $1 in
