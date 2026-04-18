@@ -83,8 +83,8 @@ A single Redis instance is shared; apps are isolated by database number:
 
 ### Env var formats
 
-- **Pretix**: `PRETIX_{SECTION}_{KEY}` — e.g., `PRETIX_DATABASE_HOST`
-- **Pretalx**: `PRETALX_{SECTION}_{KEY}` — e.g., `PRETALX_DATABASE_HOST`
+- **Pretix**: `PRETIX_{SECTION}_{KEY}` — e.g., `PRETIX_DATABASE_HOST`, `PRETIX_REDIS_LOCATION`
+- **Pretalx**: `PRETALX_{SECTION}_{KEY}` — e.g., `PRETALX_DB_TYPE`, `PRETALX_DB_HOST`, `PRETALX_DB_PASS` (note: `_PASS` not `_PASSWORD`; `PRETALX_REDIS` not `PRETALX_REDIS_LOCATION`; does **not** support `DATABASE_URL`)
 
 ### TLS and DNS
 
