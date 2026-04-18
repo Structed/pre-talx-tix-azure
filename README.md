@@ -140,6 +140,8 @@ All configuration is managed via Pulumi config (`pulumi config set <key> <value>
 | `pre-talx-tix:cloudflareApiToken` | No | — | `CLOUDFLARE_API_TOKEN` | Cloudflare API token (use `--secret`) |
 | `pre-talx-tix:cloudflareZoneId` | No | — | `CLOUDFLARE_ZONE_ID` | Cloudflare Zone ID |
 | `pre-talx-tix:cloudflareDnsChallenge` | No | `false` | `CLOUDFLARE_DNS_CHALLENGE` | Use DNS challenge for TLS |
+| `pre-talx-tix:useAzureMail` | No | `true` | — | Use Azure Communication Services for email |
+| `pre-talx-tix:acsUseCustomDomain` | No | `false` | — | Use custom domain for ACS (requires Cloudflare) |
 | `pre-talx-tix:mailFrom` | No | `noreply@example.com` | `MAIL_FROM` | Email sender address |
 | `pre-talx-tix:smtpHost` | No | — | `SMTP_HOST` | SMTP server hostname |
 | `pre-talx-tix:smtpPort` | No | `587` | `SMTP_PORT` | SMTP server port |
@@ -249,6 +251,46 @@ Both apps are multi-tenant — create new events in the web UI each year. No inf
 
 - **Pretix**: `https://tickets.yourdomain.com/<organizer>/<year>/`
 - **Pretalx**: `https://talks.yourdomain.com/<event-slug>/`
+
+## Azure Communication Services (Email)
+
+When using `ptx provision`, you can enable **Azure Communication Services** for email delivery. This is the recommended option when deploying to Azure.
+
+### How it works
+
+| Cloudflare | Domain type | Mail From |
+|------------|-------------|-----------|
+| ✓ Configured | Custom domain | `noreply@yourdomain.com` |
+| ✗ Not configured | Azure-managed | `noreply@xxx.azurecomm.net` |
+
+When using `ptx provision`, you'll be prompted to choose between custom domain (requires Cloudflare) or Azure-managed domain.
+
+### Configuration
+
+```bash
+# Enable ACS email (default: true)
+pulumi config set pre-talx-tix:useAzureMail true
+
+# Use custom domain (requires Cloudflare)
+pulumi config set pre-talx-tix:acsUseCustomDomain true
+
+# Or use Azure-managed domain (default, no Cloudflare needed)
+pulumi config set pre-talx-tix:acsUseCustomDomain false
+
+# Disable ACS entirely (use manual SMTP)
+pulumi config set pre-talx-tix:useAzureMail false
+```
+
+### Limitations
+
+- **One domain per ACS instance**: A custom domain can only be linked to a single Azure Communication Service. If your domain is already configured with another ACS instance, you must either:
+  - Remove the existing ACS domain configuration first
+  - Use an Azure-managed domain (`*.azurecomm.net`) temporarily
+  - Use manual SMTP configuration instead
+
+- **DNS verification required**: Custom domains require DNS record verification before sending is enabled (~5 minutes after records are created)
+
+- **Entra ID authentication**: SMTP uses Entra ID app credentials (auto-provisioned by Pulumi)
 
 ## Cloudflare Integration
 
