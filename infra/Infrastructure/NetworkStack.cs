@@ -19,11 +19,33 @@ public static class NetworkStack
     /// </summary>
     /// <param name="prefix">Resource name prefix</param>
     /// <param name="rg">Resource group</param>
-    /// <param name="sshAllowedCidrs">List of CIDR ranges allowed for SSH. Defaults to ["*"] (any).</param>
+    /// <param name="sshAllowedCidrs">List of CIDR ranges allowed for SSH. Defaults to null (any).</param>
     public static NetworkResult Create(string prefix, ResourceGroup rg, string[]? sshAllowedCidrs = null)
     {
-        // Default to allow from any if not specified
-        var sshSourcePrefixes = sshAllowedCidrs ?? ["*"];
+        // Build SSH security rule - use SourceAddressPrefix for wildcard, SourceAddressPrefixes for specific CIDRs
+        // Azure does not allow "*" in the SourceAddressPrefixes array
+        var sshRule = new NetworkInputs.SecurityRuleArgs
+        {
+            Name = "AllowSSH",
+            Priority = 100,
+            Direction = SecurityRuleDirection.Inbound,
+            Access = SecurityRuleAccess.Allow,
+            Protocol = SecurityRuleProtocol.Tcp,
+            SourcePortRange = "*",
+            DestinationAddressPrefix = "*",
+            DestinationPortRange = "22",
+        };
+        
+        if (sshAllowedCidrs != null && sshAllowedCidrs.Length > 0)
+        {
+            // Specific CIDRs - use the array property
+            sshRule.SourceAddressPrefixes = sshAllowedCidrs;
+        }
+        else
+        {
+            // Allow from any - use the singular property with wildcard
+            sshRule.SourceAddressPrefix = "*";
+        }
         
         // Network Security Group — allow SSH, HTTP, HTTPS, HTTP/3
         var nsg = new NetworkSecurityGroup($"{prefix}-nsg", new NetworkSecurityGroupArgs
@@ -32,18 +54,7 @@ public static class NetworkStack
             ResourceGroupName = rg.Name,
             SecurityRules = new[]
             {
-                new NetworkInputs.SecurityRuleArgs
-                {
-                    Name = "AllowSSH",
-                    Priority = 100,
-                    Direction = SecurityRuleDirection.Inbound,
-                    Access = SecurityRuleAccess.Allow,
-                    Protocol = SecurityRuleProtocol.Tcp,
-                    SourceAddressPrefixes = sshSourcePrefixes,
-                    SourcePortRange = "*",
-                    DestinationAddressPrefix = "*",
-                    DestinationPortRange = "22",
-                },
+                sshRule,
                 new NetworkInputs.SecurityRuleArgs
                 {
                     Name = "AllowHTTP",
