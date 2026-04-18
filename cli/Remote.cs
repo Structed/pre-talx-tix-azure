@@ -2,7 +2,7 @@ using System.Diagnostics;
 using Renci.SshNet;
 using Spectre.Console;
 
-namespace PreTalxTix.Cli;
+namespace Ptx.Cli;
 
 public sealed class Remote
 {

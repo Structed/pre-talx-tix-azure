@@ -4,7 +4,7 @@ platform: linux
 version: ${VERSION}
 maintainer: Pretix+Pretalx VPS project
 description: Cross-platform CLI for managing Pretix + Pretalx on a VPS
-homepage: https://github.com/your-org/pre-talx-tix-azure
+homepage: https://github.com/Structed/ptx
 license: MIT
 
 contents:

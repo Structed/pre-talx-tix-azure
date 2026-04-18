@@ -79,18 +79,18 @@ cd infra
 pulumi stack init dev
 
 # Required config
-pulumi config set pre-talx-tix:domain yourdomain.com
-pulumi config set pre-talx-tix:sshPublicKey "$(cat ~/.ssh/id_rsa.pub)"
+pulumi config set ptx:domain yourdomain.com
+pulumi config set ptx:sshPublicKey "$(cat ~/.ssh/id_rsa.pub)"
 
 # Optional — email (required for ticket confirmations & CfP notifications)
-pulumi config set pre-talx-tix:smtpHost smtp.example.com
-pulumi config set pre-talx-tix:smtpUser user@example.com
-pulumi config set pre-talx-tix:smtpPassword YOUR_PASSWORD --secret
-pulumi config set pre-talx-tix:mailFrom noreply@yourdomain.com
+pulumi config set ptx:smtpHost smtp.example.com
+pulumi config set ptx:smtpUser user@example.com
+pulumi config set ptx:smtpPassword YOUR_PASSWORD --secret
+pulumi config set ptx:mailFrom noreply@yourdomain.com
 
 # Optional — Cloudflare DNS automation
-pulumi config set pre-talx-tix:cloudflareApiToken YOUR_TOKEN --secret
-pulumi config set pre-talx-tix:cloudflareZoneId YOUR_ZONE_ID
+pulumi config set ptx:cloudflareApiToken YOUR_TOKEN --secret
+pulumi config set ptx:cloudflareZoneId YOUR_ZONE_ID
 ```
 
 Then deploy, set up DNS, and access your apps:
@@ -132,24 +132,24 @@ All configuration is managed via Pulumi config (`pulumi config set <key> <value>
 
 | Pulumi Config Key | Required | Default | `.env` Equivalent | Description |
 |-------------------|----------|---------|-------------------|-------------|
-| `pre-talx-tix:domain` | Yes | — | `DOMAIN` | Your domain (e.g., `yourdomain.com`) |
-| `pre-talx-tix:sshPublicKey` | Yes | — | — | SSH public key for VM access |
-| `pre-talx-tix:prefix` | No | `pretalxtix` | — | Azure resource name prefix |
-| `pre-talx-tix:vmSize` | No | `Standard_B2s` | — | Azure VM SKU |
+| `ptx:domain` | Yes | — | `DOMAIN` | Your domain (e.g., `yourdomain.com`) |
+| `ptx:sshPublicKey` | Yes | — | — | SSH public key for VM access |
+| `ptx:prefix` | No | `ptx` | — | Azure resource name prefix |
+| `ptx:vmSize` | No | `Standard_B2s` | — | Azure VM SKU |
 | `azure-native:location` | No | `westeurope` | — | Azure region |
-| `pre-talx-tix:cloudflareApiToken` | No | — | `CLOUDFLARE_API_TOKEN` | Cloudflare API token (use `--secret`) |
-| `pre-talx-tix:cloudflareZoneId` | No | — | `CLOUDFLARE_ZONE_ID` | Cloudflare Zone ID |
-| `pre-talx-tix:cloudflareDnsChallenge` | No | `false` | `CLOUDFLARE_DNS_CHALLENGE` | Use DNS challenge for TLS |
-| `pre-talx-tix:useAzureMail` | No | `true` | — | Use Azure Communication Services for email |
-| `pre-talx-tix:acsUseCustomDomain` | No | `false` | — | Use custom domain for ACS (requires Cloudflare) |
-| `pre-talx-tix:mailFrom` | No | `noreply@example.com` | `MAIL_FROM` | Email sender address |
-| `pre-talx-tix:smtpHost` | No | — | `SMTP_HOST` | SMTP server hostname |
-| `pre-talx-tix:smtpPort` | No | `587` | `SMTP_PORT` | SMTP server port |
-| `pre-talx-tix:smtpUser` | No | — | `SMTP_USER` | SMTP username |
-| `pre-talx-tix:smtpPassword` | No | — | `SMTP_PASSWORD` | SMTP password (use `--secret`) |
-| `pre-talx-tix:pretixImageTag` | No | `stable` | `PRETIX_IMAGE_TAG` | Pretix Docker image tag |
-| `pre-talx-tix:pretalxImageTag` | No | `latest` | `PRETALX_IMAGE_TAG` | Pretalx Docker image tag |
-| `pre-talx-tix:repoUrl` | No | *(this repo)* | — | Git repo to clone on VM |
+| `ptx:cloudflareApiToken` | No | — | `CLOUDFLARE_API_TOKEN` | Cloudflare API token (use `--secret`) |
+| `ptx:cloudflareZoneId` | No | — | `CLOUDFLARE_ZONE_ID` | Cloudflare Zone ID |
+| `ptx:cloudflareDnsChallenge` | No | `false` | `CLOUDFLARE_DNS_CHALLENGE` | Use DNS challenge for TLS |
+| `ptx:useAzureMail` | No | `true` | — | Use Azure Communication Services for email |
+| `ptx:acsUseCustomDomain` | No | `false` | — | Use custom domain for ACS (requires Cloudflare) |
+| `ptx:mailFrom` | No | `noreply@example.com` | `MAIL_FROM` | Email sender address |
+| `ptx:smtpHost` | No | — | `SMTP_HOST` | SMTP server hostname |
+| `ptx:smtpPort` | No | `587` | `SMTP_PORT` | SMTP server port |
+| `ptx:smtpUser` | No | — | `SMTP_USER` | SMTP username |
+| `ptx:smtpPassword` | No | — | `SMTP_PASSWORD` | SMTP password (use `--secret`) |
+| `ptx:pretixImageTag` | No | `stable` | `PRETIX_IMAGE_TAG` | Pretix Docker image tag |
+| `ptx:pretalxImageTag` | No | `latest` | `PRETALX_IMAGE_TAG` | Pretalx Docker image tag |
+| `ptx:repoUrl` | No | *(this repo)* | — | Git repo to clone on VM |
 
 ## Management CLI
 
@@ -269,16 +269,16 @@ When using `ptx provision`, you'll be prompted to choose between custom domain (
 
 ```bash
 # Enable ACS email (default: true)
-pulumi config set pre-talx-tix:useAzureMail true
+pulumi config set ptx:useAzureMail true
 
 # Use custom domain (requires Cloudflare)
-pulumi config set pre-talx-tix:acsUseCustomDomain true
+pulumi config set ptx:acsUseCustomDomain true
 
 # Or use Azure-managed domain (default, no Cloudflare needed)
-pulumi config set pre-talx-tix:acsUseCustomDomain false
+pulumi config set ptx:acsUseCustomDomain false
 
 # Disable ACS entirely (use manual SMTP)
-pulumi config set pre-talx-tix:useAzureMail false
+pulumi config set ptx:useAzureMail false
 ```
 
 ### Limitations
@@ -302,8 +302,8 @@ pulumi config set pre-talx-tix:useAzureMail false
 4. Set via Pulumi config:
 
 ```bash
-pulumi config set pre-talx-tix:cloudflareApiToken YOUR_TOKEN --secret
-pulumi config set pre-talx-tix:cloudflareZoneId YOUR_ZONE_ID
+pulumi config set ptx:cloudflareApiToken YOUR_TOKEN --secret
+pulumi config set ptx:cloudflareZoneId YOUR_ZONE_ID
 ```
 
 ### TLS modes
@@ -315,7 +315,7 @@ pulumi config set pre-talx-tix:cloudflareZoneId YOUR_ZONE_ID
 
 To use DNS challenge:
 ```bash
-pulumi config set pre-talx-tix:cloudflareDnsChallenge true
+pulumi config set ptx:cloudflareDnsChallenge true
 ```
 
 This builds a custom Caddy image with the Cloudflare plugin (first deploy takes ~1 min longer).
@@ -341,7 +341,7 @@ Caddy auto-provisions Let's Encrypt certs. Ensure:
 
 ### Database connection issues
 ```bash
-docker compose exec postgres psql -U pretalxtix -l
+docker compose exec postgres psql -U ptx -l
 ```
 
 ### Restart everything
@@ -366,7 +366,7 @@ If you already have a VPS (or prefer not to use Pulumi), you can deploy directly
 
 ```bash
 git clone <this-repo>
-cd pre-talx-tix-azure
+cd ptx
 
 # Install Docker if needed
 ./manage.sh setup

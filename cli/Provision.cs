@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Spectre.Console;
 
-namespace PreTalxTix.Cli;
+namespace Ptx.Cli;
 
 public static class Provision
 {
@@ -173,35 +173,35 @@ public static class Provision
 
         // Set config values
         SetConfig("azure-native:location", region);
-        SetConfig("pre-talx-tix:prefix", prefix);
-        SetConfig("pre-talx-tix:domain", domain);
-        SetConfig("pre-talx-tix:sshPublicKey", sshPublicKey);
-        SetConfig("pre-talx-tix:vmSize", vmSize);
-        SetConfig("pre-talx-tix:adminEmail", adminEmail);
+        SetConfig("ptx:prefix", prefix);
+        SetConfig("ptx:domain", domain);
+        SetConfig("ptx:sshPublicKey", sshPublicKey);
+        SetConfig("ptx:vmSize", vmSize);
+        SetConfig("ptx:adminEmail", adminEmail);
         
         // Email configuration
-        SetConfig("pre-talx-tix:useAzureMail", useAzureMail.ToString().ToLower());
+        SetConfig("ptx:useAzureMail", useAzureMail.ToString().ToLower());
         if (useAzureMail)
         {
-            SetConfig("pre-talx-tix:acsUseCustomDomain", acsUseCustomDomain.ToString().ToLower());
+            SetConfig("ptx:acsUseCustomDomain", acsUseCustomDomain.ToString().ToLower());
         }
         
         if (!useAzureMail)
         {
             // Manual SMTP configuration
-            SetConfig("pre-talx-tix:smtpHost", smtpHost);
-            SetConfig("pre-talx-tix:smtpPort", smtpPort.ToString());
-            SetConfig("pre-talx-tix:smtpUser", smtpUser);
-            SetConfig("pre-talx-tix:smtpPassword", smtpPassword, secret: true);
-            SetConfig("pre-talx-tix:mailFrom", mailFrom);
+            SetConfig("ptx:smtpHost", smtpHost);
+            SetConfig("ptx:smtpPort", smtpPort.ToString());
+            SetConfig("ptx:smtpUser", smtpUser);
+            SetConfig("ptx:smtpPassword", smtpPassword, secret: true);
+            SetConfig("ptx:mailFrom", mailFrom);
         }
 
         if (configureCloudflare)
         {
-            SetConfig("pre-talx-tix:cloudflareApiToken", cfToken, secret: true);
-            SetConfig("pre-talx-tix:cloudflareZoneId", cfZoneId);
+            SetConfig("ptx:cloudflareApiToken", cfToken, secret: true);
+            SetConfig("ptx:cloudflareZoneId", cfZoneId);
             if (cfDnsChallenge)
-                SetConfig("pre-talx-tix:cloudflareDnsChallenge", "true");
+                SetConfig("ptx:cloudflareDnsChallenge", "true");
         }
 
         // Run pulumi up
@@ -245,7 +245,7 @@ public static class Provision
         {
             var config = AppConfig.Load();
             config.Host = $"azureuser@{vmIp}";
-            config.ProjectDir = "/opt/pretalxtix";
+            config.ProjectDir = "/opt/ptx";
 
             // Try to find the private key matching the public key
             var privateKeyPath = sshKeyPath.Replace(".pub", "");

@@ -3,7 +3,7 @@ using Pulumi.AzureNative.Compute;
 using Pulumi.AzureNative.Resources;
 using ComputeInputs = Pulumi.AzureNative.Compute.Inputs;
 
-namespace PreTalxTix.Infra.Infrastructure;
+namespace Ptx.Infra.Infrastructure;
 
 public record VirtualMachineArgs
 {

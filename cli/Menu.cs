@@ -1,6 +1,6 @@
 using Spectre.Console;
 
-namespace PreTalxTix.Cli;
+namespace Ptx.Cli;
 
 public static class Menu
 {

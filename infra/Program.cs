@@ -1,6 +1,6 @@
 using Pulumi;
-using PreTalxTix.Infra.Helpers;
-using PreTalxTix.Infra.Infrastructure;
+using Ptx.Infra.Helpers;
+using Ptx.Infra.Infrastructure;
 
 return await Deployment.RunAsync(() =>
 {
@@ -11,7 +11,7 @@ return await Deployment.RunAsync(() =>
     var vmSize = config.Get("vmSize") ?? "Standard_B2s";
     var pretixImageTag = config.Get("pretixImageTag") ?? "stable";
     var pretalxImageTag = config.Get("pretalxImageTag") ?? "latest";
-    var repoUrl = config.Get("repoUrl") ?? "https://github.com/Structed/pre-talx-tix-azure.git";
+    var repoUrl = config.Get("repoUrl") ?? "https://github.com/Structed/ptx.git";
     var repoBranch = config.Get("repoBranch") ?? ""; // Empty = default branch
 
     // Optional config
@@ -75,7 +75,7 @@ return await Deployment.RunAsync(() =>
         RepoUrl = repoUrl,
         RepoBranch = repoBranch,
         Domain = domain,
-        DbUser = Output.Create("pretalxtix"),
+        DbUser = Output.Create("ptx"),
         DbPassword = secrets.DbPassword.Result,
         PretixSecretKey = secrets.PretixSecretKey.Result,
         PretalxSecretKey = secrets.PretalxSecretKey.Result,

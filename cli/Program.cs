@@ -1,5 +1,5 @@
 using Spectre.Console;
-using PreTalxTix.Cli;
+using Ptx.Cli;
 
 var config = AppConfig.Load();
 var remote = new Remote(config);
@@ -70,7 +70,7 @@ int ShowHelp()
 
     AnsiConsole.WriteLine();
     AnsiConsole.MarkupLine("Run [yellow]ptx[/] without arguments for an interactive menu.");
-    AnsiConsole.MarkupLine($"Config: [grey]{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".pretalxtix", "config.json")}[/]");
+    AnsiConsole.MarkupLine($"Config: [grey]{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".ptx", "config.json")}[/]");
 
     return 0;
 }

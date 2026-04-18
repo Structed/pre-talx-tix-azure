@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Spectre.Console;
 
-namespace PreTalxTix.Cli;
+namespace Ptx.Cli;
 
 [JsonSerializable(typeof(AppConfig))]
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
@@ -12,11 +12,11 @@ public sealed class AppConfig
 {
     public string Host { get; set; } = "";
     public string KeyFile { get; set; } = "";
-    public string ProjectDir { get; set; } = "~/pre-talx-tix-azure";
+    public string ProjectDir { get; set; } = "~/ptx";
 
     private static readonly string ConfigDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-        ".pretalxtix");
+        ".ptx");
 
     private static readonly string ConfigPath = Path.Combine(ConfigDir, "config.json");
 

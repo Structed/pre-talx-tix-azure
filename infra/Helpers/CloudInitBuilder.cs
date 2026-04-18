@@ -1,7 +1,7 @@
 using System.Text;
 using Pulumi;
 
-namespace PreTalxTix.Infra.Helpers;
+namespace Ptx.Infra.Helpers;
 
 public record CloudInitConfig
 {
@@ -95,7 +95,7 @@ public static class CloudInitBuilder
         sb.Append("  - jq\n"); // For JSON parsing of ACS verification records
         sb.Append("\n");
         sb.Append("write_files:\n");
-        sb.Append("  - path: /opt/pretalxtix-env\n");
+        sb.Append("  - path: /opt/ptx-env\n");
         sb.Append("    encoding: b64\n");
         sb.Append($"    content: {envBase64}\n");
         sb.Append("  - path: /opt/setup.sh\n");
@@ -144,8 +144,8 @@ public static class CloudInitBuilder
         var sb = new StringBuilder();
         sb.Append("#!/bin/bash\n");
         sb.Append("set -euo pipefail\n");
-        sb.Append("exec > >(tee -a /var/log/pretalxtix-setup.log) 2>&1\n");
-        sb.Append("echo '=== PreTalxTix setup started ==='\n");
+        sb.Append("exec > >(tee -a /var/log/ptx-setup.log) 2>&1\n");
+        sb.Append("echo '=== ptx setup started ==='\n");
         sb.Append("\n");
 
         // Install Docker
@@ -190,7 +190,7 @@ public static class CloudInitBuilder
         sb.Append("echo 'Cloning repository...'\n");
         var branchArg = string.IsNullOrEmpty(cfg.RepoBranch) ? "" : $" -b {cfg.RepoBranch}";
         sb.Append("for attempt in 1 2 3; do\n");
-        sb.Append($"  if git clone{branchArg} {cfg.RepoUrl} /opt/pretalxtix; then\n");
+        sb.Append($"  if git clone{branchArg} {cfg.RepoUrl} /opt/ptx; then\n");
         sb.Append("    echo 'Repository cloned successfully.'\n");
         sb.Append("    break\n");
         sb.Append("  fi\n");
@@ -201,14 +201,14 @@ public static class CloudInitBuilder
         sb.Append("\n");
 
         // Move .env file into place
-        sb.Append("mv /opt/pretalxtix-env /opt/pretalxtix/.env\n");
+        sb.Append("mv /opt/ptx-env /opt/ptx/.env\n");
         sb.Append("\n");
 
         // Set up Cloudflare DNS records if configured
         if (!string.IsNullOrEmpty(cfg.CloudflareApiToken))
         {
             sb.Append("echo 'Setting up Cloudflare DNS records...'\n");
-            sb.Append("cd /opt/pretalxtix\n");
+            sb.Append("cd /opt/ptx\n");
             sb.Append("bash scripts/cloudflare-dns.sh || echo 'WARNING: Cloudflare DNS setup failed'\n");
             sb.Append("\n");
             
@@ -216,7 +216,7 @@ public static class CloudInitBuilder
             if (!string.IsNullOrEmpty(acsVerificationRecords))
             {
                 sb.Append("echo 'Setting up Azure Communication Services email DNS records...'\n");
-                sb.Append("source /opt/pretalxtix/.env\n");
+                sb.Append("source /opt/ptx/.env\n");
                 // Store the verification records JSON
                 var escapedRecords = acsVerificationRecords.Replace("'", "'\\''");
                 sb.Append($"ACS_RECORDS='{escapedRecords}'\n");
@@ -298,7 +298,7 @@ fi
 
         // Start services - use DNS challenge compose file if configured
         sb.Append("echo 'Starting services...'\n");
-        sb.Append("cd /opt/pretalxtix\n");
+        sb.Append("cd /opt/ptx\n");
         if (cfg.CloudflareDnsChallenge == "true")
         {
             sb.Append("docker compose -f docker-compose.yml -f docker-compose.cloudflare.yml up -d --build\n");
@@ -404,7 +404,7 @@ fi
         sb.Append("echo 'Installing backup cron job...'\n");
         sb.Append("bash scripts/backup.sh --install-cron || echo 'WARNING: Failed to install backup cron'\n");
         sb.Append("\n");
-        sb.Append("echo '=== PreTalxTix setup complete ==='\n");
+        sb.Append("echo '=== ptx setup complete ==='\n");
 
         return sb.ToString();
     }
