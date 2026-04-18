@@ -69,6 +69,31 @@ public static class Provision
             
             if (acsUseCustomDomain)
             {
+                // Warn about the one-domain-per-ACS-instance Azure limitation
+                AnsiConsole.WriteLine();
+                AnsiConsole.Write(new Panel(
+                    "[yellow]Azure enforces that a custom domain can only belong to\n" +
+                    "one ACS Email Service at a time — globally across all\n" +
+                    "subscriptions and tenants.[/]\n\n" +
+                    $"If [green]{domain}[/] is already registered with another ACS\n" +
+                    "Email Service, provisioning will fail. You must disconnect\n" +
+                    "it from the other ACS first (Azure Portal → Communication\n" +
+                    "Services → Email → Domains → Disconnect).")
+                    .Header("[red]⚠ Custom Domain Limitation[/]")
+                    .Border(BoxBorder.Rounded)
+                    .BorderColor(Color.Yellow));
+                AnsiConsole.WriteLine();
+
+                if (!AnsiConsole.Confirm($"Is [green]{domain}[/] available (not used by another ACS)?", true))
+                {
+                    // Let the user fall back to Azure-managed domain
+                    AnsiConsole.MarkupLine("[grey]Switching to Azure-managed domain instead.[/]");
+                    acsUseCustomDomain = false;
+                }
+            }
+
+            if (acsUseCustomDomain)
+            {
                 // Custom domain requires Cloudflare for DNS automation
                 AnsiConsole.MarkupLine("[yellow]Custom domain requires Cloudflare for DNS automation.[/]");
                 cfToken = AnsiConsole.Prompt(
@@ -189,6 +214,23 @@ public static class Provision
         if (pulumiResult != 0)
         {
             AnsiConsole.MarkupLine("[red]Pulumi deployment failed.[/] Check the output above.");
+
+            if (acsUseCustomDomain)
+            {
+                AnsiConsole.WriteLine();
+                AnsiConsole.Write(new Panel(
+                    $"If the error mentions domain registration or [green]{domain}[/],\n" +
+                    "the domain is likely already linked to another ACS Email\n" +
+                    "Service. To fix this:\n\n" +
+                    "  1. Remove the domain from the other ACS instance\n" +
+                    "     (Portal → Communication Services → Email → Domains)\n" +
+                    "  2. Re-run [yellow]ptx provision[/]\n\n" +
+                    "Or retry with [green]Azure-managed domain[/] to avoid the conflict.")
+                    .Header("[yellow]Possible cause: ACS domain conflict[/]")
+                    .Border(BoxBorder.Rounded)
+                    .BorderColor(Color.Yellow));
+            }
+
             return 1;
         }
 
