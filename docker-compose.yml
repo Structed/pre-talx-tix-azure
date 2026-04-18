@@ -1,6 +1,8 @@
 services:
   caddy:
-    image: caddy:2-alpine
+    # Pin Caddy version for reproducible deployments
+    # Check for updates: https://hub.docker.com/_/caddy/tags
+    image: caddy:2.9-alpine
     restart: unless-stopped
     ports:
       - "80:80"
@@ -14,6 +16,12 @@ services:
     depends_on:
       - pretix
       - pretalx
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   postgres:
     image: postgres:16-alpine

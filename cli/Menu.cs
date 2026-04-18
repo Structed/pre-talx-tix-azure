@@ -51,7 +51,8 @@ public static class Menu
             new SelectionPrompt<string>()
                 .Title("[bold]What would you like to do?[/]")
                 .HighlightStyle("green")
-                .AddChoices(
+                .AddChoiceGroup("Operations", new[]
+                {
                     "Status",
                     "Update containers",
                     "View logs",
@@ -62,13 +63,18 @@ public static class Menu
                     "Update DNS records",
                     "Stop services",
                     "Start services",
-                    "─── First-time setup ───",
+                })
+                .AddChoiceGroup("First-time setup", new[]
+                {
                     "Provision new server (Azure)",
                     "Server setup (install Docker)",
                     "Deploy (first time)",
-                    "─── Configuration ───",
+                })
+                .AddChoiceGroup("Configuration", new[]
+                {
                     "Change connection",
-                    "Quit"));
+                    "Quit",
+                }));
 
         AnsiConsole.WriteLine();
 

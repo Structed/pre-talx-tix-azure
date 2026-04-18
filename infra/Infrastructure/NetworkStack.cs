@@ -14,8 +14,17 @@ public record NetworkResult(
 
 public static class NetworkStack
 {
-    public static NetworkResult Create(string prefix, ResourceGroup rg)
+    /// <summary>
+    /// Creates networking resources including VNet, NSG, Public IP, and NIC.
+    /// </summary>
+    /// <param name="prefix">Resource name prefix</param>
+    /// <param name="rg">Resource group</param>
+    /// <param name="sshAllowedCidrs">List of CIDR ranges allowed for SSH. Defaults to ["*"] (any).</param>
+    public static NetworkResult Create(string prefix, ResourceGroup rg, string[]? sshAllowedCidrs = null)
     {
+        // Default to allow from any if not specified
+        var sshSourcePrefixes = sshAllowedCidrs ?? ["*"];
+        
         // Network Security Group — allow SSH, HTTP, HTTPS, HTTP/3
         var nsg = new NetworkSecurityGroup($"{prefix}-nsg", new NetworkSecurityGroupArgs
         {
@@ -30,7 +39,7 @@ public static class NetworkStack
                     Direction = SecurityRuleDirection.Inbound,
                     Access = SecurityRuleAccess.Allow,
                     Protocol = SecurityRuleProtocol.Tcp,
-                    SourceAddressPrefix = "*",
+                    SourceAddressPrefixes = sshSourcePrefixes,
                     SourcePortRange = "*",
                     DestinationAddressPrefix = "*",
                     DestinationPortRange = "22",
