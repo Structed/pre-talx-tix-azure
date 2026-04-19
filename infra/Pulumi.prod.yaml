@@ -1,0 +1,14 @@
+config:
+  azure-native:location: westeurope
+  tixtalk:prefix: godotfest-prod
+  tixtalk:domain: godotfest.com
+  tixtalk:sshPublicKey: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCXKsPDUWpQHp8W/Up6FdAnlnCk5atme5Nzdg5Tms3vpDjV01xzD4udpibWVm3JGfNqw8B4xzDIC+hSZAcgPVlehyoX/kyNz4TSQtHLEaVsuHeRxzcnB5NEW1fVqmYxI+XayduLG64HkvdlVz/8GmEtuoWB7pmc8QdKaSGBchkw7wA2h1eIgL1l7huy5xisOvTALIZqKUmqu3uYVSRcbfqT6PASwzlYVbhOoJFW3jj50lkYOv3euhAJOjpx9PzntJJBnvHKTz1ldYiALnEJGvNChAcqclNcBh+mI7Sj9kfyW9Ofh4sQN7aydMwz32uRfYxqUJ6lXz7tZxp61ilwsG5C9aFPsXkeq7bw9/cRMg3Sv2qAvGkNXCXS4BF8vkMRF0CTVcuY0bHX3B8PsDfmgKe155ATTNT3qXITY+wnVfl0tz45ofH7JAJlA+UHEkhh8H31zSYyWEKbsnI4tBKfKpIr4nsR6sG5dObC4UEGb/gstfbj6kCCRmRDVax259GltRBtGUbuSNhbxqeGpWcTHLgHrvOfBRo09yFPEc/utCvCl+XpfPehUwyzEbigy8CgNqOzRCgjOaoDQpoQyF/+3cRhnWiW1fik64sS+l3f0jEFRTaLZ+a0oYr3SiebEJpgsyPYwdy5bQ4AmpUjgw5z4EbcWGIUXIQzySft7/E/8hFnyw== johannes.ebner@jebner.de
+  tixtalk:vmSize: Standard_B2s
+  tixtalk:adminEmail: johannes@godotfest.com
+  tixtalk:environment: prod
+  tixtalk:useAzureMail: "true"
+  tixtalk:acsUseCustomDomain: "true"
+  tixtalk:cloudflareApiToken:
+    secure: AAABAIaKBN8Dhowx5jczRKhyyrKhwx3a1IWJgpCke9NVjm39eJczUJKXN3fplOAjfoSCHiVVwnrkm63d6FWbRIYizHyu4gXFfrLcznBrCO1ccUoAeA==
+  tixtalk:cloudflareZoneId: 3191caf42094e04b63439d70094f4b26
+  tixtalk:cloudflareDnsChallenge: "true"
