@@ -58,6 +58,7 @@ public static class Menu
                     "View logs",
                     "Restart services",
                     "Backup databases",
+                    "Periodic tasks (cron)",
                     "Restore database",
                     "Open shell",
                     "Update DNS records",
@@ -92,6 +93,7 @@ public static class Menu
             "View logs" => PromptLogs(remote),
             "Restart services" => remote.RunCommand("restart"),
             "Backup databases" => PromptBackup(remote),
+            "Periodic tasks (cron)" => PromptCron(remote),
             "Restore database" => remote.RunInteractive("restore"),
             "Open shell" => PromptShell(remote),
             "Update DNS records" => remote.RunCommand("dns"),
@@ -155,6 +157,21 @@ public static class Menu
         return action == "Install daily cron job"
             ? remote.RunCommand("backup --install-cron")
             : remote.RunCommand("backup");
+    }
+
+    private static int PromptCron(Remote remote)
+    {
+        var action = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Periodic tasks:")
+                .AddChoices("Run periodic tasks now", "Install cron job (every 5 min)", "Remove cron job"));
+
+        return action switch
+        {
+            "Install cron job (every 5 min)" => remote.RunCommand("cron --install"),
+            "Remove cron job" => remote.RunCommand("cron --remove"),
+            _ => remote.RunCommand("cron"),
+        };
     }
 
     private static int ChangeConnection(AppConfig config)

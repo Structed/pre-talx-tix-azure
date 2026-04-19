@@ -138,6 +138,10 @@ cmd_shell() {
     docker compose exec "$service" /bin/bash 2>/dev/null || docker compose exec "$service" /bin/sh
 }
 
+cmd_cron() {
+    bash "$SCRIPTS/cron.sh" "$@"
+}
+
 cmd_dns() {
     bash "$SCRIPTS/cloudflare-dns.sh"
 }
@@ -204,6 +208,8 @@ Commands:
   logs [service]       Tail logs (all services or specific one)
   backup [--install-cron]
                        Back up databases (or install daily cron job)
+  cron [--install|--remove]
+                       Run periodic tasks (or install/remove cron job)
   restore [file db]    Restore database from backup (interactive if no args)
   shell [service]      Open a shell in a container (default: pretix)
   dns                  Create/update Cloudflare DNS records
@@ -249,6 +255,7 @@ show_menu() {
     echo "║   2) Update          6) Restore           "
     echo "║   3) Logs            7) Shell             "
     echo "║   4) Restart         8) DNS records        "
+    echo "║   9) Periodic tasks                        "
     echo "║                                           "
     echo "║   s) Setup (first time)                   "
     echo "║   d) Deploy (first time)                  "
@@ -291,6 +298,18 @@ show_menu() {
             cmd_shell "${svc:-pretix}"
             ;;
         8) cmd_dns ;;
+        9)
+            echo "  1) Run periodic tasks now"
+            echo "  2) Install cron job (every 5 minutes)"
+            echo "  3) Remove cron job"
+            read -p "Choose: " cchoice
+            case "$cchoice" in
+                1) cmd_cron ;;
+                2) cmd_cron --install ;;
+                3) cmd_cron --remove ;;
+                *) echo "Invalid choice." ;;
+            esac
+            ;;
         s|S) cmd_setup ;;
         d|D) cmd_deploy ;;
         q|Q) echo "Bye!" ;;
@@ -312,6 +331,7 @@ else
         update)   shift; cmd_update "$@" ;;
         logs)     shift; cmd_logs "$@" ;;
         backup)   shift; cmd_backup "$@" ;;
+        cron)     shift; cmd_cron "$@" ;;
         restore)  shift; cmd_restore "$@" ;;
         shell)    shift; cmd_shell "$@" ;;
         dns)      shift; cmd_dns "$@" ;;

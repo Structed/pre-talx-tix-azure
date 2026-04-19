@@ -61,7 +61,7 @@ cd cli && dotnet run -- provision
 The interactive wizard asks for your domain, SSH key, and Azure region, then:
 1. Configures Pulumi stack settings
 2. Provisions the Azure VM and networking (`pulumi up`)
-3. VM cloud-init installs Docker, clones repo, starts services, runs migrations, and sets up daily backups
+3. VM cloud-init installs Docker, clones repo, starts services, runs migrations, sets up periodic tasks, and configures daily backups
 4. Configures the `tixtalk` CLI to connect to the new server
 
 After ~5 minutes your apps are live. Point DNS and visit them:
@@ -99,7 +99,7 @@ Then deploy, set up DNS, and access your apps:
 pulumi up
 ```
 
-Cloud-init runs on first boot (~5 min): installs Docker, starts services, runs migrations, sets up daily backups.
+Cloud-init runs on first boot (~5 min): installs Docker, starts services, runs migrations, sets up periodic tasks, and configures daily backups.
 
 Point DNS to the VM IP from `pulumi stack output vmPublicIp`:
 
@@ -186,6 +186,7 @@ tixtalk status               # Service status + URLs
 tixtalk update               # Pull latest images + restart
 tixtalk logs pretix          # Tail pretix logs
 tixtalk backup               # Backup databases
+tixtalk cron --install  # Install periodic task cron
 tixtalk help                 # All commands
 
 # Control SSH access (Azure deployments only)
@@ -235,6 +236,23 @@ When SSHed into the server directly, use `manage.sh`:
 # Update both
 ./manage.sh update --pretix 2025.1.0 --pretalx 2025.1.0
 ```
+
+### Periodic Tasks
+
+Both pretix and pretalx require `runperiodic` to run regularly for background tasks like sending emails, expiring orders, and processing payments. The standalone Docker images do **not** run this automatically.
+
+```bash
+# Install the cron job (runs every 5 minutes) — required!
+./manage.sh cron --install
+
+# Or run manually
+./manage.sh cron
+
+# Remove the cron job
+./manage.sh cron --remove
+```
+
+For new Pulumi deployments, the cron job is installed automatically. For existing deployments, run `./manage.sh update` after pulling the latest code — it auto-installs the cron if missing.
 
 ### Backups
 

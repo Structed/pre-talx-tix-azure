@@ -23,6 +23,7 @@ return command switch
     "update" => remote.RunCommand($"update {string.Join(' ', commandArgs)}"),
     "logs" => remote.RunInteractive($"logs {string.Join(' ', commandArgs)}"),
     "backup" => remote.RunCommand($"backup {string.Join(' ', commandArgs)}"),
+    "cron" => remote.RunCommand($"cron {string.Join(' ', commandArgs)}"),
     "restore" => remote.RunInteractive($"restore {string.Join(' ', commandArgs)}"),
     "shell" => remote.RunInteractive($"shell {string.Join(' ', commandArgs)}"),
     "dns" => remote.RunCommand("dns"),
@@ -97,6 +98,7 @@ int ShowHelp()
     table.AddRow("[green]update[/] [[--pretix TAG]] [[--pretalx TAG]]", "Pull latest images and restart");
     table.AddRow("[green]logs[/] [[service]]", "Tail service logs (Ctrl+C to stop)");
     table.AddRow("[green]backup[/] [[--install-cron]]", "Back up databases (or install daily cron)");
+    table.AddRow("[green]cron[/] [[--install|--remove]]", "Run periodic tasks (or install/remove cron)");
     table.AddRow("[green]restore[/]", "Restore database from backup (interactive)");
     table.AddRow("[green]shell[/] [[service]]", "Open a shell in a container (default: pretix)");
     table.AddRow("[green]dns[/]", "Create/update Cloudflare DNS records");

@@ -75,7 +75,8 @@ A single Redis instance is shared; apps are isolated by database number:
 
 - `setup.sh` — install Docker, configure firewall (run once)
 - `deploy.sh` — generate secrets, create DNS records, start services (run once)
-- `update.sh` — pull latest images + restart
+- `update.sh` — pull latest images + restart (auto-installs periodic task cron if missing)
+- `cron.sh` — run pretix/pretalx `runperiodic` (supports `--install`)
 - `backup.sh` — pg_dump both databases (supports `--install-cron`)
 - `restore.sh` — restore from a backup file
 - `init-db.sh` — PostgreSQL entrypoint script (creates both databases on first start)

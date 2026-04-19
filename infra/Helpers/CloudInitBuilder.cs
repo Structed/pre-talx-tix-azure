@@ -377,6 +377,11 @@ create_pretalx_admin() {{
         sb.Append("systemctl start cron\n");
         sb.Append("\n");
 
+        // Install periodic task cron (required for both dev and prod — runs runperiodic for pretix/pretalx)
+        sb.Append("echo 'Installing periodic task cron job...'\n");
+        sb.Append("bash scripts/cron.sh --install || echo 'WARNING: Failed to install periodic task cron'\n");
+        sb.Append("\n");
+
         // Install backup cron (prod only)
         var environment = (cfg.Environment ?? string.Empty).Trim();
         if (string.Equals(environment, "prod", StringComparison.OrdinalIgnoreCase))

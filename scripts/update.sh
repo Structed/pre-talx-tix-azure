@@ -39,6 +39,13 @@ $COMPOSE_CMD pull --ignore-buildable 2>/dev/null || $COMPOSE_CMD pull 2>/dev/nul
 echo "Restarting services..."
 $COMPOSE_CMD up -d --build
 
+# Auto-install periodic task cron if not already present
+if ! crontab -l 2>/dev/null | grep -q "tixtalk-cron"; then
+    echo ""
+    echo "Installing periodic task cron job (runs every 5 minutes)..."
+    bash "$SCRIPT_DIR/cron.sh" --install
+fi
+
 echo ""
 echo "=== Update complete ==="
 docker compose ps --format "table {{.Name}}\t{{.Image}}\t{{.Status}}"
