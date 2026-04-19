@@ -221,6 +221,10 @@ retry() {
         sb.Append("mv /opt/tixtalk-env /opt/tixtalk/.env\n");
         sb.Append("\n");
 
+        // Transfer ownership to azureuser so they can manage the project (git pull, edit .env, etc.)
+        sb.Append("chown -R azureuser:azureuser /opt/tixtalk\n");
+        sb.Append("\n");
+
         // DNS records are now managed by Pulumi (CloudflareDnsStack) instead of cloud-init,
         // so they are automatically cleaned up on `pulumi destroy`.
 

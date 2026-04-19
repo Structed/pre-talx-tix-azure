@@ -69,6 +69,13 @@ cmd_update() {
 
 cmd_upgrade() {
     cd "$SCRIPT_DIR"
+
+    # Fix ownership if project was cloned by root (e.g., cloud-init)
+    if [ ! -w "$SCRIPT_DIR/.git" ]; then
+        echo "Fixing file permissions (project was created by root)..."
+        sudo chown -R "$(id -u):$(id -g)" "$SCRIPT_DIR"
+    fi
+
     echo "Pulling latest code..."
     git pull
     echo ""
