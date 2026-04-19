@@ -8,6 +8,7 @@ public record CloudInitConfig
     public required string RepoUrl { get; init; }
     public string RepoBranch { get; init; } = ""; // Empty = default branch
     public required string Domain { get; init; }
+    public string Environment { get; init; } = "dev";
     public required Output<string> DbUser { get; init; }
     public required Output<string> DbPassword { get; init; }
     public required Output<string> PretixSecretKey { get; init; }
@@ -376,9 +377,16 @@ create_pretalx_admin() {{
         sb.Append("systemctl start cron\n");
         sb.Append("\n");
 
-        // Install backup cron (non-fatal if it fails)
-        sb.Append("echo 'Installing backup cron job...'\n");
-        sb.Append("bash scripts/backup.sh --install-cron || echo 'WARNING: Failed to install backup cron'\n");
+        // Install backup cron (prod only)
+        if (cfg.Environment == "prod")
+        {
+            sb.Append("echo 'Installing backup cron job...'\n");
+            sb.Append("bash scripts/backup.sh --install-cron || echo 'WARNING: Failed to install backup cron'\n");
+        }
+        else
+        {
+            sb.Append("echo 'Skipping backup cron (dev environment)'\n");
+        }
         sb.Append("\n");
         sb.Append("echo '=== tixtalk setup complete ==='\n");
 

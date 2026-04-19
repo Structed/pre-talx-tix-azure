@@ -9,6 +9,7 @@ return await Deployment.RunAsync(() =>
     var domain = config.Require("domain");
     var sshPublicKey = config.Require("sshPublicKey");
     var vmSize = config.Get("vmSize") ?? "Standard_B2s";
+    var environment = config.Get("environment") ?? "dev";
     var pretixImageTag = config.Get("pretixImageTag") ?? "stable";
     var pretalxImageTag = config.Get("pretalxImageTag") ?? "latest";
     var repoUrl = config.Get("repoUrl") ?? "https://github.com/Structed/tixtalk.git";
@@ -91,6 +92,7 @@ return await Deployment.RunAsync(() =>
         RepoUrl = repoUrl,
         RepoBranch = repoBranch,
         Domain = domain,
+        Environment = environment,
         DbUser = Output.Create("tixtalk"),
         DbPassword = secrets.DbPassword.Result,
         PretixSecretKey = secrets.PretixSecretKey.Result,
@@ -140,6 +142,7 @@ return await Deployment.RunAsync(() =>
     // Outputs
     var outputs = new Dictionary<string, object?>
     {
+        ["environment"] = environment,
         ["resourceGroupName"] = rg.Name,
         ["vmPublicIp"] = vm.PublicIpAddress,
         ["sshCommand"] = vm.PublicIpAddress.Apply(ip => $"ssh azureuser@{ip}"),
