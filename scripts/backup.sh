@@ -5,6 +5,9 @@
 #   ./scripts/backup.sh --install-cron  # Install daily 3 AM cron job
 set -euo pipefail
 
+# Ensure PATH includes Docker (cron runs with minimal PATH)
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH"
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
