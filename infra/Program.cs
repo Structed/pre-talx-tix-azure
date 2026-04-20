@@ -82,11 +82,10 @@ return await Deployment.RunAsync(() =>
     Output<string> finalMailFrom = Output.Create(mailFrom);
     
     AzureCommunicationResult? acsResult = null;
-    AzureDomainResult? domainResult = null;
     if (useAzureMail)
     {
         // Phase 1: Create Email Service + Domain + SenderUsername
-        domainResult = AzureCommunicationStack.CreateDomain(new AzureCommunicationArgs
+        var domainResult = AzureCommunicationStack.CreateDomain(new AzureCommunicationArgs
         {
             Prefix = prefix,
             Domain = domain,

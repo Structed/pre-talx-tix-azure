@@ -53,16 +53,21 @@ public static class DomainVerificationCommand
         });
     }
 
+    private static string EscapePwshSingleQuoted(string value) => value.Replace("'", "''");
+
     private static string BuildVerificationScript(string domainName, string emailServiceName, string resourceGroupName)
     {
+        var escapedDomain = EscapePwshSingleQuoted(domainName);
+        var escapedService = EscapePwshSingleQuoted(emailServiceName);
+        var escapedRg = EscapePwshSingleQuoted(resourceGroupName);
         var maxAttempts = (TimeoutMinutes * 60) / PollIntervalSeconds;
 
         return $@"
 $ErrorActionPreference = 'Stop'
 
-$Domain = '{domainName}'
-$EmailService = '{emailServiceName}'
-$ResourceGroup = '{resourceGroupName}'
+$Domain = '{escapedDomain}'
+$EmailService = '{escapedService}'
+$ResourceGroup = '{escapedRg}'
 $MaxAttempts = {maxAttempts}
 $PollInterval = {PollIntervalSeconds}
 $Types = @('Domain', 'SPF', 'DKIM', 'DKIM2')
@@ -88,11 +93,25 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {{
     $statusSummary = @()
 
     foreach ($Type in $Types) {{
-        $status = az communication email domain show `
+        $status = $null
+        $statusOutput = az communication email domain show `
             --domain-name $Domain `
             --email-service-name $EmailService `
             --resource-group $ResourceGroup `
-            --query ""verificationStates.$Type.status"" -o tsv 2>$null
+            --query ""verificationStates.$Type.status"" -o tsv 2>&1
+
+        if ($LASTEXITCODE -ne 0) {{
+            Write-Host ""ERROR: Failed to query verification status for $Type (exit code $LASTEXITCODE).""
+            Write-Host ""Azure CLI output:""
+            Write-Host $statusOutput
+            exit 1
+        }}
+
+        $status = ($statusOutput | Out-String).Trim()
+        if ([string]::IsNullOrWhiteSpace($status)) {{
+            Write-Host ""ERROR: Empty verification status returned for $Type.""
+            exit 1
+        }}
 
         if ($status -eq 'Verified') {{
             $statusSummary += ""$Type=OK""

@@ -97,7 +97,8 @@ public static class CloudflareDnsStack
 
         var opts = new CustomResourceOptions { Provider = provider };
 
-        // Helper to create a DNS record only when the verification record has real values
+        // Helper to declare a DNS record and validate that the verification record
+        // has real values when Pulumi resolves the ACS outputs during deployment.
         DnsRecord CreateVerificationRecord(string suffix, string type,
             Output<DnsRecordResponse?> record)
         {

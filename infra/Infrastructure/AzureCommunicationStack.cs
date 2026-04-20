@@ -83,7 +83,8 @@ public static class AzureCommunicationStack
 
     /// <summary>
     /// Phase 1: Creates the Email Service, Domain, and SenderUsername.
-    /// For custom domains, the returned VerificationRecords must be used to create DNS records
+    /// For custom domains, use the returned domain resource's verification records
+    /// (for example, <c>Domain.VerificationRecords</c>) to create DNS records
     /// and initiate verification before calling <see cref="CreateService"/>.
     /// </summary>
     public static AzureDomainResult CreateDomain(AzureCommunicationArgs args)
