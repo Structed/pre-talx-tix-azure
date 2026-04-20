@@ -33,23 +33,24 @@ load_env
 BACKUP_DIR="$PROJECT_DIR/backups"
 mkdir -p "$BACKUP_DIR"
 
-# Fix ownership if dir was created by root (e.g., cron ran as root)
+# Ensure the backup directory owner/group matches the project directory
+# (e.g., if it was previously created by root via cron).
 project_owner="$(stat -c '%U:%G' "$PROJECT_DIR")"
 backup_owner="$(stat -c '%U:%G' "$BACKUP_DIR")"
 if [ "$backup_owner" != "$project_owner" ]; then
     if [ "$(id -u)" -eq 0 ]; then
-        chown "$project_owner" "$BACKUP_DIR"
-        log "Fixed backup directory ownership to $project_owner"
+        chown -R "$project_owner" "$BACKUP_DIR"
+        log "Fixed backup directory ownership recursively to $project_owner"
     else
         log_error "Cannot use $BACKUP_DIR (owned by $backup_owner, expected $project_owner)"
-        log_error "Fix with: sudo chown $project_owner $BACKUP_DIR"
+        log_error "Fix with: sudo chown -R $project_owner $BACKUP_DIR"
         exit 1
     fi
 fi
 
 if [ ! -w "$BACKUP_DIR" ]; then
     log_error "Cannot write to $BACKUP_DIR (owned by $(stat -c '%U:%G' "$BACKUP_DIR"))"
-    log_error "Fix with: sudo chown $project_owner $BACKUP_DIR"
+    log_error "Fix with: sudo chown -R $project_owner $BACKUP_DIR"
     exit 1
 fi
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)

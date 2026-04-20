@@ -43,18 +43,18 @@ $COMPOSE_CMD up -d --build
 PROJECT_OWNER="$(stat -c '%U' "$PROJECT_DIR")"
 
 # Migrate cron jobs from root to project owner (fixes cloud-init installing as root)
-if sudo crontab -l 2>/dev/null | grep -q "tixtalk"; then
+if sudo crontab -l 2>/dev/null | grep -qE "scripts/(cron|backup)\.sh|tixtalk-(cron|backup)"; then
     echo ""
     echo "Migrating cron jobs from root to $PROJECT_OWNER..."
-    ( sudo crontab -l 2>/dev/null | grep -v "tixtalk" || true ) | sudo crontab -
+    ( sudo crontab -l 2>/dev/null | grep -vE "scripts/(cron|backup)\.sh|tixtalk-(cron|backup)" || true ) | sudo crontab -
     echo "Cron jobs removed from root's crontab."
 fi
 
 # Fix backup directory ownership if it was created by root
 if [ -d "$PROJECT_DIR/backups" ] && [ "$(stat -c '%U' "$PROJECT_DIR/backups")" = "root" ]; then
     echo "Fixing backup directory permissions..."
-    sudo chown "$PROJECT_OWNER:$(stat -c '%G' "$PROJECT_DIR")" "$PROJECT_DIR/backups"
-    echo "Backup directory ownership fixed."
+    sudo chown -R "$PROJECT_OWNER:$(stat -c '%G' "$PROJECT_DIR")" "$PROJECT_DIR/backups"
+    echo "Backup directory ownership fixed recursively."
 fi
 
 # Install cron jobs as the project owner (not root)
