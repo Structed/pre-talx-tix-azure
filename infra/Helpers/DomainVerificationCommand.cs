@@ -10,6 +10,11 @@ public record DomainVerificationArgs
     public required Output<string> EmailServiceName { get; init; }
     public required Output<string> ResourceGroupName { get; init; }
     /// <summary>
+    /// Azure subscription ID to pass to <c>az</c> CLI commands via <c>--subscription</c>.
+    /// Ensures the CLI targets the same subscription as the Pulumi Azure Native provider.
+    /// </summary>
+    public required Output<string> SubscriptionId { get; init; }
+    /// <summary>
     /// Explicit dependencies that must complete before verification starts
     /// (e.g., DNS record resources).
     /// </summary>
@@ -34,8 +39,8 @@ public static class DomainVerificationCommand
     /// </summary>
     public static Command Create(DomainVerificationArgs args)
     {
-        var script = Output.Tuple(args.EmailServiceName, args.ResourceGroupName)
-            .Apply(t => BuildVerificationScript(args.DomainName, t.Item1, t.Item2));
+        var script = Output.Tuple(args.EmailServiceName, args.ResourceGroupName, args.SubscriptionId)
+            .Apply(t => BuildVerificationScript(args.DomainName, t.Item1, t.Item2, t.Item3));
 
         return new Command($"{args.Prefix}-domain-verify", new CommandArgs
         {
@@ -45,6 +50,7 @@ public static class DomainVerificationCommand
             {
                 args.EmailServiceName.Apply(n => (object)n),
                 args.ResourceGroupName.Apply(n => (object)n),
+                args.SubscriptionId.Apply(n => (object)n),
                 Output.Create((object)args.DomainName),
             },
         }, new CustomResourceOptions
@@ -55,11 +61,12 @@ public static class DomainVerificationCommand
 
     private static string EscapePwshSingleQuoted(string value) => value.Replace("'", "''");
 
-    private static string BuildVerificationScript(string domainName, string emailServiceName, string resourceGroupName)
+    private static string BuildVerificationScript(string domainName, string emailServiceName, string resourceGroupName, string subscriptionId)
     {
         var escapedDomain = EscapePwshSingleQuoted(domainName);
         var escapedService = EscapePwshSingleQuoted(emailServiceName);
         var escapedRg = EscapePwshSingleQuoted(resourceGroupName);
+        var escapedSub = EscapePwshSingleQuoted(subscriptionId);
         var maxAttempts = (TimeoutMinutes * 60) / PollIntervalSeconds;
 
         return $@"
@@ -68,11 +75,12 @@ $ErrorActionPreference = 'Stop'
 $Domain = '{escapedDomain}'
 $EmailService = '{escapedService}'
 $ResourceGroup = '{escapedRg}'
+$Subscription = '{escapedSub}'
 $MaxAttempts = {maxAttempts}
 $PollInterval = {PollIntervalSeconds}
 $Types = @('Domain', 'SPF', 'DKIM', 'DKIM2')
 
-Write-Host ""Initiating ACS domain verification for $Domain...""
+Write-Host ""Initiating ACS domain verification for $Domain (subscription: $Subscription)...""
 
 foreach ($Type in $Types) {{
     Write-Host ""  Initiating $Type verification...""
@@ -80,6 +88,7 @@ foreach ($Type in $Types) {{
         --domain-name $Domain `
         --email-service-name $EmailService `
         --resource-group $ResourceGroup `
+        --subscription $Subscription `
         --verification-type $Type 2>$null
     if ($LASTEXITCODE -ne 0) {{
         Write-Host ""  Warning: initiate-verification for $Type returned exit code $LASTEXITCODE (may already be in progress)""
@@ -98,6 +107,7 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {{
             --domain-name $Domain `
             --email-service-name $EmailService `
             --resource-group $ResourceGroup `
+            --subscription $Subscription `
             --query ""verificationStates.$Type.status"" -o tsv 2>&1
 
         if ($LASTEXITCODE -ne 0) {{
@@ -126,6 +136,7 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {{
                     --domain-name $Domain `
                     --email-service-name $EmailService `
                     --resource-group $ResourceGroup `
+                    --subscription $Subscription `
                     --verification-type $Type 2>$null | Out-Null
             }}
         }}
@@ -141,7 +152,7 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {{
 }}
 
 Write-Host ""ERROR: Domain verification timed out after {TimeoutMinutes} minutes.""
-Write-Host ""Check status: az communication email domain show --domain-name $Domain --email-service-name $EmailService --resource-group $ResourceGroup --query verificationStates""
+Write-Host ""Check status: az communication email domain show --domain-name $Domain --email-service-name $EmailService --resource-group $ResourceGroup --subscription $Subscription --query verificationStates""
 exit 1
 ";
     }

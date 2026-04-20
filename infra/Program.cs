@@ -80,6 +80,9 @@ return await Deployment.RunAsync(() =>
     Output<string> finalSmtpPassword = Output.Create(smtpPassword);
     Output<string> finalMailFrom = Output.Create(mailFrom);
     
+    // Get the subscription ID for any az CLI commands (ensures they target the same subscription as Pulumi)
+    var clientConfig = Pulumi.AzureNative.Authorization.GetClientConfig.Invoke();
+    
     AzureCommunicationResult? acsResult = null;
     if (useAzureMail)
     {
@@ -116,6 +119,7 @@ return await Deployment.RunAsync(() =>
                 DomainName = domain,
                 EmailServiceName = domainResult.EmailService.Name,
                 ResourceGroupName = rg.Name,
+                SubscriptionId = clientConfig.Apply(c => c.SubscriptionId),
                 DependsOn = acsVerificationDns.DnsRecords.Cast<Resource>().ToArray(),
             });
 
