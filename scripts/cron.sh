@@ -23,7 +23,7 @@ cd "$PROJECT_DIR"
 if [ "${1:-}" = "--install" ]; then
     LOG_DIR="$PROJECT_DIR/logs"
     mkdir -p "$LOG_DIR"
-    CRON_CMD="*/5 * * * * cd $PROJECT_DIR && ./scripts/cron.sh >> $LOG_DIR/cron.log 2>&1"
+    CRON_CMD="*/5 * * * * mkdir -p $LOG_DIR && cd $PROJECT_DIR && ./scripts/cron.sh >> $LOG_DIR/cron.log 2>&1"
     ( crontab -l 2>/dev/null || true ) | ( grep -v "tixtalk-cron" || true ) | ( grep -v "scripts/cron.sh" || true ) | { cat; echo "$CRON_CMD"; } | crontab -
     log "Installed periodic task cron job (every 5 minutes)."
     echo "Logs: $LOG_DIR/cron.log"

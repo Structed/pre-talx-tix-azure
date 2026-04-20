@@ -74,4 +74,4 @@ install_cron_as_owner bash "$SCRIPT_DIR/backup.sh" --install-cron
 
 echo ""
 echo "=== Update complete ==="
-docker compose ps --format "table {{.Name}}\t{{.Image}}\t{{.Status}}"
+$COMPOSE_CMD ps --format "table {{.Name}}\t{{.Image}}\t{{.Status}}"
