@@ -108,12 +108,10 @@ for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {{
             --email-service-name $EmailService `
             --resource-group $ResourceGroup `
             --subscription $Subscription `
-            --query ""verificationStates.$Type.status"" -o tsv 2>&1
+            --query ""verificationStates.$Type.status"" -o tsv 2>$null
 
         if ($LASTEXITCODE -ne 0) {{
             Write-Host ""ERROR: Failed to query verification status for $Type (exit code $LASTEXITCODE).""
-            Write-Host ""Azure CLI output:""
-            Write-Host $statusOutput
             exit 1
         }}
 
