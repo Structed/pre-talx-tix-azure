@@ -11,3 +11,5 @@ services:
       - caddy_config:/config
     environment:
       DOMAIN: ${DOMAIN}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "--no-check-certificate", "https://localhost:443"]
