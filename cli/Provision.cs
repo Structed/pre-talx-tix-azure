@@ -443,6 +443,8 @@ public static partial class Provision
         }
     }
 
+    private sealed record AzureSubscription(string Name, string Id, bool IsDefault);
+
     private static (string? Name, string? Id) SelectSubscription()
     {
         var (exitCode, output) = AzureCli.RunCommand(
@@ -457,15 +459,16 @@ public static partial class Provision
             return (null, null);
         }
 
-        List<(string Name, string Id, bool IsDefault)> subs;
+        List<AzureSubscription> subs;
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(output);
             subs = doc.RootElement.EnumerateArray()
-                .Select(e => (
+                .Select(e => new AzureSubscription(
                     Name: e.GetProperty("name").GetString() ?? "(unnamed)",
                     Id: e.GetProperty("id").GetString() ?? "",
                     IsDefault: e.GetProperty("isDefault").GetBoolean()))
+                .Where(s => !string.IsNullOrWhiteSpace(s.Id))
                 .OrderByDescending(s => s.IsDefault)
                 .ThenBy(s => s.Name)
                 .ToList();
@@ -482,12 +485,6 @@ public static partial class Provision
             return (null, null);
         }
 
-        // Build display strings — escape names for Spectre markup safety
-        var choices = subs.Select(s =>
-            s.IsDefault
-                ? $"{Markup.Escape(s.Name)}  ({Markup.Escape(s.Id)}) (default)"
-                : $"{Markup.Escape(s.Name)}  ({Markup.Escape(s.Id)})").ToList();
-
         if (subs.Count == 1)
         {
             var only = subs[0];
@@ -496,18 +493,18 @@ public static partial class Provision
         }
 
         var selected = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
+            new SelectionPrompt<AzureSubscription>()
                 .Title("Select Azure [green]subscription[/]:")
                 .PageSize(10)
                 .HighlightStyle(new Style(Color.Green))
-                .AddChoices(choices));
+                .UseConverter(s => s.IsDefault
+                    ? $"{Markup.Escape(s.Name)}  ({Markup.Escape(s.Id)}) (default)"
+                    : $"{Markup.Escape(s.Name)}  ({Markup.Escape(s.Id)})")
+                .AddChoices(subs));
 
-        var idx = choices.IndexOf(selected);
-        var sub = subs[idx];
+        AnsiConsole.MarkupLine($"[green]✓[/] Using subscription: [yellow]{Markup.Escape(selected.Name)}[/]");
 
-        AnsiConsole.MarkupLine($"[green]✓[/] Using subscription: [yellow]{Markup.Escape(sub.Name)}[/]");
-
-        return (sub.Name, sub.Id);
+        return (selected.Name, selected.Id);
     }
 
     private static string DetectSshKey()

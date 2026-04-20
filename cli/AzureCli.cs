@@ -70,11 +70,18 @@ public static class AzureCli
             if (process == null)
                 return (1, "Failed to start az command");
 
+            // Read stderr asynchronously to avoid deadlock when both buffers fill
+            string stderr = "";
+            process.ErrorDataReceived += (_, e) =>
+            {
+                if (e.Data != null) stderr += e.Data + Environment.NewLine;
+            };
+            process.BeginErrorReadLine();
+
             var stdout = process.StandardOutput.ReadToEnd();
-            var stderr = process.StandardError.ReadToEnd();
             process.WaitForExit();
 
-            var output = string.IsNullOrWhiteSpace(stdout) ? stderr : stdout;
+            var output = string.IsNullOrWhiteSpace(stdout) ? stderr.TrimEnd() : stdout;
             return (process.ExitCode, output);
         }
         catch (Exception ex)
