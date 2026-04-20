@@ -37,26 +37,40 @@ public static class AzureCli
             CreateNoWindow = true
         };
 
+        // Collect all arguments
+        var allArgs = new List<string>(args);
+        if (!string.IsNullOrWhiteSpace(subscription))
+        {
+            allArgs.Add("--subscription");
+            allArgs.Add(subscription);
+        }
+
         if (OperatingSystem.IsWindows())
         {
             var azPath = FindCli();
             if (azPath == null)
                 return (1, "Azure CLI not found");
 
-            psi.FileName = azPath;
+            if (azPath.EndsWith(".cmd", StringComparison.OrdinalIgnoreCase))
+            {
+                // .cmd files must be launched via cmd.exe /c
+                // Quote each argument and wrap the whole command for cmd.exe
+                psi.FileName = "cmd.exe";
+                var quotedArgs = string.Join(" ", allArgs.Select(a => $"\"{a}\""));
+                psi.Arguments = $"/c \"\"{azPath}\" {quotedArgs}\"";
+            }
+            else
+            {
+                psi.FileName = azPath;
+                foreach (var arg in allArgs)
+                    psi.ArgumentList.Add(arg);
+            }
         }
         else
         {
             psi.FileName = "az";
-        }
-
-        foreach (var arg in args)
-            psi.ArgumentList.Add(arg);
-
-        if (!string.IsNullOrWhiteSpace(subscription))
-        {
-            psi.ArgumentList.Add("--subscription");
-            psi.ArgumentList.Add(subscription);
+            foreach (var arg in allArgs)
+                psi.ArgumentList.Add(arg);
         }
 
         try
@@ -82,44 +96,56 @@ public static class AzureCli
 
     private static string? FindCli()
     {
-        // Look for az.exe (not az.cmd) so we can launch directly with UseShellExecute=false
-        var possiblePaths = new[]
+        // Look for az.exe or az.cmd in known install locations
+        var searchDirs = new[]
         {
-            @"C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.exe",
-            @"C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.exe",
+            @"C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin",
+            @"C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin",
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                @"Programs\Azure CLI\wbin\az.exe"),
+                @"Programs\Azure CLI\wbin"),
         };
 
-        foreach (var path in possiblePaths)
+        // Prefer az.exe (direct launch), fall back to az.cmd (needs cmd.exe /c)
+        foreach (var dir in searchDirs)
         {
-            if (File.Exists(path))
-                return path;
+            var exePath = Path.Combine(dir, "az.exe");
+            if (File.Exists(exePath))
+                return exePath;
+        }
+
+        foreach (var dir in searchDirs)
+        {
+            var cmdPath = Path.Combine(dir, "az.cmd");
+            if (File.Exists(cmdPath))
+                return cmdPath;
         }
 
         // Try to find via PATH using where.exe
-        try
+        foreach (var name in new[] { "az.exe", "az.cmd" })
         {
-            var psi = new ProcessStartInfo
+            try
             {
-                FileName = "where.exe",
-                Arguments = "az.exe",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using var process = Process.Start(psi);
-            if (process != null)
-            {
-                var output = process.StandardOutput.ReadLine();
-                process.WaitForExit();
-                if (!string.IsNullOrWhiteSpace(output) && File.Exists(output))
-                    return output;
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "where.exe",
+                    Arguments = name,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using var process = Process.Start(psi);
+                if (process != null)
+                {
+                    var output = process.StandardOutput.ReadLine();
+                    process.WaitForExit();
+                    if (!string.IsNullOrWhiteSpace(output) && File.Exists(output))
+                        return output;
+                }
             }
-        }
-        catch
-        {
-            // Ignore
+            catch
+            {
+                // Ignore
+            }
         }
 
         return null;
