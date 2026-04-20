@@ -447,7 +447,7 @@ public static partial class Provision
 
     private static (string? Name, string? Id) SelectSubscription()
     {
-        var (exitCode, output) = AzureCli.RunCommand(
+        var (exitCode, output) = AzureCli.RunCommand(subscription: null,
             "account", "list", "--query", "[].{name:name, id:id, isDefault:isDefault}", "--output", "json");
 
         if (exitCode != 0)

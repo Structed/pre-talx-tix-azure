@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text;
 using Spectre.Console;
 
 namespace TixTalk.Cli;
@@ -14,7 +13,7 @@ public static class AzureCli
     /// </summary>
     public static bool Validate()
     {
-        var (exitCode, _) = RunCommand("version", "--output", "none");
+        var (exitCode, _) = RunCommand(subscription: null, "version", "--output", "none");
         if (exitCode == 0)
             return true;
 
@@ -25,13 +24,8 @@ public static class AzureCli
     }
 
     /// <summary>
-    /// Runs an Azure CLI command and returns exit code + captured output.
-    /// </summary>
-    public static (int ExitCode, string Output) RunCommand(params string[] args)
-        => RunCommand(subscription: null, args);
-
-    /// <summary>
-    /// Runs an Azure CLI command scoped to a specific subscription.
+    /// Runs an Azure CLI command, optionally scoped to a subscription.
+    /// Pass null for <paramref name="subscription"/> to use the default.
     /// </summary>
     public static (int ExitCode, string Output) RunCommand(string? subscription, params string[] args)
     {
@@ -71,19 +65,13 @@ public static class AzureCli
             if (process == null)
                 return (1, "Failed to start az command");
 
-            // Read stderr asynchronously to avoid deadlock when both buffers fill
-            var stderr = new StringBuilder();
-            process.ErrorDataReceived += (_, e) =>
-            {
-                if (e.Data != null)
-                    lock (stderr) { stderr.AppendLine(e.Data); }
-            };
-            process.BeginErrorReadLine();
-
+            // Read both streams concurrently to avoid deadlock
+            var stderrTask = process.StandardError.ReadToEndAsync();
             var stdout = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(); // also waits for async stderr to flush
+            process.WaitForExit();
+            var stderr = stderrTask.GetAwaiter().GetResult();
 
-            var output = string.IsNullOrWhiteSpace(stdout) ? stderr.ToString().TrimEnd() : stdout;
+            var output = string.IsNullOrWhiteSpace(stdout) ? stderr.TrimEnd() : stdout;
             return (process.ExitCode, output);
         }
         catch (Exception ex)
