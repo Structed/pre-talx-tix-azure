@@ -66,19 +66,11 @@ install_cron_as_owner() {
     fi
 }
 
-# Auto-install periodic task cron if not already present
-if ! sudo -u "$PROJECT_OWNER" crontab -l 2>/dev/null | grep -q "scripts/cron.sh"; then
-    echo ""
-    echo "Installing periodic task cron job (runs every 5 minutes)..."
-    install_cron_as_owner bash "$SCRIPT_DIR/cron.sh" --install
-fi
-
-# Auto-install backup cron if not already present
-if ! sudo -u "$PROJECT_OWNER" crontab -l 2>/dev/null | grep -q "scripts/backup.sh"; then
-    echo ""
-    echo "Installing backup cron job (daily 3 AM)..."
-    install_cron_as_owner bash "$SCRIPT_DIR/backup.sh" --install-cron
-fi
+# Ensure cron jobs are installed and up-to-date (--install de-duplicates existing entries)
+echo ""
+echo "Ensuring cron jobs are up-to-date..."
+install_cron_as_owner bash "$SCRIPT_DIR/cron.sh" --install
+install_cron_as_owner bash "$SCRIPT_DIR/backup.sh" --install-cron
 
 echo ""
 echo "=== Update complete ==="
