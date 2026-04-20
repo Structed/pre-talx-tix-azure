@@ -39,13 +39,39 @@ $COMPOSE_CMD pull --ignore-buildable 2>/dev/null || $COMPOSE_CMD pull 2>/dev/nul
 echo "Restarting services..."
 $COMPOSE_CMD up -d --build
 
-# Auto-install periodic task cron if not already present
-if ! crontab -l 2>/dev/null | grep -q "tixtalk-cron"; then
+# Determine the project owner (for installing cron jobs under the right user)
+PROJECT_OWNER="$(stat -c '%U' "$PROJECT_DIR")"
+
+# Migrate cron jobs from root to project owner (fixes cloud-init installing as root)
+if sudo crontab -l 2>/dev/null | grep -qE "# tixtalk-(cron|backup)|tixtalk-(cron|backup)\.log"; then
     echo ""
-    echo "Installing periodic task cron job (runs every 5 minutes)..."
-    bash "$SCRIPT_DIR/cron.sh" --install
+    echo "Migrating cron jobs from root to $PROJECT_OWNER..."
+    ( sudo crontab -l 2>/dev/null | grep -vE "# tixtalk-(cron|backup)|tixtalk-(cron|backup)\.log" || true ) | sudo crontab -
+    echo "Cron jobs removed from root's crontab."
 fi
+
+# Fix backup directory ownership if it was created by root
+if [ -d "$PROJECT_DIR/backups" ] && [ "$(stat -c '%U' "$PROJECT_DIR/backups")" = "root" ]; then
+    echo "Fixing backup directory permissions..."
+    sudo chown -R "$PROJECT_OWNER:$(stat -c '%G' "$PROJECT_DIR")" "$PROJECT_DIR/backups"
+    echo "Backup directory ownership fixed recursively."
+fi
+
+# Install cron jobs as the project owner (not root)
+install_cron_as_owner() {
+    if [ "$(id -un)" = "$PROJECT_OWNER" ]; then
+        "$@"
+    else
+        sudo -u "$PROJECT_OWNER" "$@"
+    fi
+}
+
+# Ensure cron jobs are installed and up-to-date (--install de-duplicates existing entries)
+echo ""
+echo "Ensuring cron jobs are up-to-date..."
+install_cron_as_owner bash "$SCRIPT_DIR/cron.sh" --install
+install_cron_as_owner bash "$SCRIPT_DIR/backup.sh" --install-cron
 
 echo ""
 echo "=== Update complete ==="
-docker compose ps --format "table {{.Name}}\t{{.Image}}\t{{.Status}}"
+$COMPOSE_CMD ps --format "table {{.Name}}\t{{.Image}}\t{{.Status}}"
