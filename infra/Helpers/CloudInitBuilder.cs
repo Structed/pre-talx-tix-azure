@@ -228,6 +228,15 @@ retry() {
         // DNS records are now managed by Pulumi (CloudflareDnsStack) instead of cloud-init,
         // so they are automatically cleaned up on `pulumi destroy`.
 
+        // Configure swap (2 GB) to prevent OOM freezes
+        sb.Append("echo 'Configuring 2 GB swap...'\n");
+        sb.Append("fallocate -l 2G /swapfile\n");
+        sb.Append("chmod 600 /swapfile\n");
+        sb.Append("mkswap /swapfile\n");
+        sb.Append("swapon /swapfile\n");
+        sb.Append("echo '/swapfile none swap sw 0 0' >> /etc/fstab\n");
+        sb.Append("\n");
+
         // Configure sysctl for Redis (avoid background save failures)
         sb.Append("echo 'Configuring system for Redis...'\n");
         sb.Append("sysctl vm.overcommit_memory=1\n");
