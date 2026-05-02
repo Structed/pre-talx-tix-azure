@@ -37,8 +37,10 @@ cmd_status() {
     echo ""
 
     if [ -n "${DOMAIN:-}" ] && [ "$DOMAIN" != "yourdomain.com" ]; then
-        echo "  Pretix:  https://tickets.${DOMAIN}"
-        echo "  Pretalx: https://talks.${DOMAIN}"
+        local t_host="${TICKETS_HOST:-tickets.${DOMAIN}}"
+        local x_host="${TALKS_HOST:-talks.${DOMAIN}}"
+        echo "  Pretix:  https://${t_host}"
+        echo "  Pretalx: https://${x_host}"
         echo ""
     fi
 
@@ -179,6 +181,21 @@ cmd_restart() {
     echo "Done."
 }
 
+cmd_dev() {
+    cd "$SCRIPT_DIR"
+    if [ ! -f .env.local ]; then
+        echo "ERROR: .env.local not found. Copy it from the template:"
+        echo "  cp .env.local.example .env.local   (if using a custom template)"
+        echo "  Or use the provided .env.local as-is for local development."
+        exit 1
+    fi
+    echo "Starting local dev environment (HTTP only)..."
+    echo "  Pretix:  http://localhost:8000"
+    echo "  Pretalx: http://localhost:8001"
+    echo ""
+    docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local up "$@"
+}
+
 cmd_stop() {
     cd "$SCRIPT_DIR"
     echo "Stopping services..."
@@ -226,6 +243,7 @@ Pretix + Pretalx Management CLI
 Usage: ./manage.sh [command] [args...]
 
 Commands:
+  dev [docker args]    Start local dev environment (HTTP only, no TLS/DNS)
   setup                Install Docker & configure firewall (run once)
   deploy               First-time deployment (generates secrets, starts services)
   status               Show service status, URLs, and disk usage
@@ -354,6 +372,7 @@ if [ $# -eq 0 ]; then
     show_menu
 else
     case "$1" in
+        dev)      shift; cmd_dev "$@" ;;
         setup)    shift; cmd_setup "$@" ;;
         deploy)   shift; cmd_deploy "$@" ;;
         status)   shift; cmd_status "$@" ;;

@@ -223,6 +223,74 @@ When SSHed into the server directly, use `manage.sh`:
 ./manage.sh help         # All commands
 ```
 
+## Local Development
+
+Run the full stack on your local machine without Azure, DNS, or TLS:
+
+```bash
+# Start local dev environment (HTTP only)
+./manage.sh dev
+
+# Or explicitly:
+docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local up
+```
+
+This gives you:
+- **Pretix** at `http://localhost:8000`
+- **Pretalx** at `http://localhost:8001`
+- PostgreSQL + Redis running locally in containers
+- No domain, no TLS, no Cloudflare required
+
+The `.env.local` file comes with pre-filled dev credentials. Edit it to customize.
+
+To stop: `Ctrl+C` (or `docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local down`)
+
+### First-time local setup
+
+After starting for the first time, run migrations:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretix pretix migrate
+docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretix pretix rebuild
+docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretalx pretalx migrate
+docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretalx pretalx rebuild
+```
+
+## Staging / Dev Environment (Azure)
+
+Deploy a separate Azure VM with prefixed subdomains (`dev-tickets.yourdomain.com` / `dev-talks.yourdomain.com`) that doesn't conflict with production.
+
+### Provision
+
+```bash
+tixtalk provision    # Select "dev" when prompted for environment
+```
+
+The dev environment automatically:
+- Uses `dev-` subdomain prefix (e.g., `dev-tickets.godotfest.com`)
+- Creates separate Azure resources (resource group, VM, IP)
+- Skips daily backup cron
+- Gets its own Pulumi stack
+
+### Test
+
+After cloud-init completes (~5 minutes):
+```bash
+tixtalk status       # Check services are running
+```
+
+### Teardown
+
+When done testing, destroy all dev resources:
+
+```bash
+tixtalk teardown     # Select "dev" stack — removes VM, DNS, IP, everything
+```
+
+### Migration note
+
+If you previously provisioned a `dev` stack, its DNS records (`tickets.yourdomain.com`) may conflict with production. Destroy the old stack and re-provision to get the new prefixed records.
+
 ## Day-2 Operations
 
 ### Updating Containers
@@ -449,6 +517,9 @@ See [Configuration Reference](#configuration-reference) for all `.env` variables
 ### Pulumi (recommended)
 
 ```bash
+tixtalk teardown     # Interactive — select stack (dev or prod)
+
+# Or manually:
 cd infra
 pulumi destroy    # Removes all Azure resources
 ```

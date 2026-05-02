@@ -28,6 +28,18 @@ if [ -z "${DOMAIN:-}" ] || [ "$DOMAIN" = "yourdomain.com" ]; then
     exit 1
 fi
 
+# Compute TICKETS_HOST / TALKS_HOST if not set (backward compat)
+if [ -z "${TICKETS_HOST:-}" ]; then
+    TICKETS_HOST="${SUBDOMAIN_PREFIX:-}tickets.${DOMAIN}"
+    echo "TICKETS_HOST=${TICKETS_HOST}" >> .env
+    echo "Computed TICKETS_HOST=${TICKETS_HOST}"
+fi
+if [ -z "${TALKS_HOST:-}" ]; then
+    TALKS_HOST="${SUBDOMAIN_PREFIX:-}talks.${DOMAIN}"
+    echo "TALKS_HOST=${TALKS_HOST}" >> .env
+    echo "Computed TALKS_HOST=${TALKS_HOST}"
+fi
+
 # Generate secrets if empty
 CHANGED=false
 if [ -z "${DB_PASSWORD:-}" ]; then
@@ -58,8 +70,8 @@ if [ -n "${CLOUDFLARE_API_TOKEN:-}" ]; then
     echo ""
 else
     echo "No CLOUDFLARE_API_TOKEN set — make sure DNS records exist:"
-    echo "  tickets.${DOMAIN} → $(curl -s -4 ifconfig.me 2>/dev/null || echo '<server-ip>')"
-    echo "  talks.${DOMAIN}   → $(curl -s -4 ifconfig.me 2>/dev/null || echo '<server-ip>')"
+    echo "  ${TICKETS_HOST} → $(curl -s -4 ifconfig.me 2>/dev/null || echo '<server-ip>')"
+    echo "  ${TALKS_HOST}   → $(curl -s -4 ifconfig.me 2>/dev/null || echo '<server-ip>')"
     echo ""
 fi
 
@@ -79,8 +91,8 @@ $COMPOSE_CMD up -d
 echo ""
 echo "=== Deployment complete ==="
 echo ""
-echo "  Pretix:  https://tickets.${DOMAIN}"
-echo "  Pretalx: https://talks.${DOMAIN}"
+echo "  Pretix:  https://${TICKETS_HOST}"
+echo "  Pretalx: https://${TALKS_HOST}"
 echo ""
 echo "First-time setup:"
 echo "  1. Wait ~30s for services to initialize"

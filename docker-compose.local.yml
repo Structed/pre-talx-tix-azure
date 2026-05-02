@@ -1,0 +1,19 @@
+# Local development override — HTTP only, no TLS, no Cloudflare
+# Usage: docker compose -f docker-compose.yml -f docker-compose.local.yml up
+services:
+  caddy:
+    image: caddy:2.9-alpine
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - pretalx_data:/srv/pretalx:ro
+
+  pretix:
+    environment:
+      PRETIX_PRETIX_URL: http://localhost:8000
+
+  pretalx:
+    environment:
+      PRETALX_SITE_URL: http://localhost:8001

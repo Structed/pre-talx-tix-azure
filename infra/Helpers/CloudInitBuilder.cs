@@ -8,6 +8,7 @@ public record CloudInitConfig
     public required string RepoUrl { get; init; }
     public string RepoBranch { get; init; } = ""; // Empty = default branch
     public required string Domain { get; init; }
+    public string SubdomainPrefix { get; init; } = "";
     public string Environment { get; init; } = "dev";
     public required Output<string> DbUser { get; init; }
     public required Output<string> DbPassword { get; init; }
@@ -117,6 +118,11 @@ public static class CloudInitBuilder
     {
         var sb = new StringBuilder();
         sb.Append($"DOMAIN={cfg.Domain}\n");
+        var ticketsHost = $"{cfg.SubdomainPrefix}tickets.{cfg.Domain}";
+        var talksHost = $"{cfg.SubdomainPrefix}talks.{cfg.Domain}";
+        sb.Append($"SUBDOMAIN_PREFIX={cfg.SubdomainPrefix}\n");
+        sb.Append($"TICKETS_HOST={ticketsHost}\n");
+        sb.Append($"TALKS_HOST={talksHost}\n");
         sb.Append($"DB_USER={dbUser}\n");
         sb.Append($"DB_PASSWORD={dbPassword}\n");
         sb.Append($"PRETIX_SECRET_KEY={pretixSecret}\n");

@@ -15,6 +15,7 @@ var commandArgs = args.Skip(1).ToArray();
 return command switch
 {
     "provision" => Provision.Run(),
+    "teardown" => Teardown.Run(),
     "connect" => Connect(commandArgs),
     "ssh" => SshCommand(commandArgs),
     "status" => remote.RunCommand("status"),
@@ -96,6 +97,7 @@ int ShowHelp()
         .AddColumn("[bold]Description[/]");
 
     table.AddRow("[green]provision[/]", "Provision a new Azure VM (interactive wizard)");
+    table.AddRow("[green]teardown[/]", "Destroy all Azure resources for a stack");
     table.AddRow("[green]connect[/] [[user@host]]", "SSH to the server (or configure a new connection)");
     table.AddRow("[green]ssh[/] <open|close|status|config>", "Control Azure NSG SSH access");
     table.AddRow("[green]status[/]", "Show service status, URLs, and disk usage");
