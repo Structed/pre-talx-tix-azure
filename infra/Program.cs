@@ -207,6 +207,8 @@ return await Deployment.RunAsync(() =>
         ["resourceGroupName"] = rg.Name,
         ["vmPublicIp"] = vm.PublicIpAddress,
         ["sshCommand"] = vm.PublicIpAddress.Apply(ip => $"ssh azureuser@{ip}"),
+        ["ticketsHost"] = ticketsHost,
+        ["talksHost"] = talksHost,
         ["pretixUrl"] = $"https://{ticketsHost}",
         ["pretalxUrl"] = $"https://{talksHost}",
     };

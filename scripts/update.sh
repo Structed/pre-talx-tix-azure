@@ -12,18 +12,28 @@ cd "$PROJECT_DIR"
 # Load .env for configuration
 load_env || true
 
-# Backfill TICKETS_HOST / TALKS_HOST if missing (added in v2.x for subdomain prefix support)
+# Backfill TICKETS_HOST / TALKS_HOST if missing or empty (added in v2.x for subdomain prefix support)
 if [ -f .env ]; then
-    if ! grep -q '^TICKETS_HOST=' .env 2>/dev/null; then
+    if ! grep -q '^TICKETS_HOST=.\+' .env 2>/dev/null; then
         TICKETS_HOST="${SUBDOMAIN_PREFIX:-}tickets.${DOMAIN:-localhost}"
-        echo "" >> .env
-        echo "TICKETS_HOST=${TICKETS_HOST}" >> .env
+        # Replace blank entry or append if not present
+        if grep -q '^TICKETS_HOST=' .env 2>/dev/null; then
+            sed -i "s|^TICKETS_HOST=.*|TICKETS_HOST=${TICKETS_HOST}|" .env
+        else
+            echo "" >> .env
+            echo "TICKETS_HOST=${TICKETS_HOST}" >> .env
+        fi
         echo "Backfilled TICKETS_HOST=${TICKETS_HOST} into .env"
     fi
-    if ! grep -q '^TALKS_HOST=' .env 2>/dev/null; then
+    if ! grep -q '^TALKS_HOST=.\+' .env 2>/dev/null; then
         TALKS_HOST="${SUBDOMAIN_PREFIX:-}talks.${DOMAIN:-localhost}"
-        echo "" >> .env
-        echo "TALKS_HOST=${TALKS_HOST}" >> .env
+        # Replace blank entry or append if not present
+        if grep -q '^TALKS_HOST=' .env 2>/dev/null; then
+            sed -i "s|^TALKS_HOST=.*|TALKS_HOST=${TALKS_HOST}|" .env
+        else
+            echo "" >> .env
+            echo "TALKS_HOST=${TALKS_HOST}" >> .env
+        fi
         echo "Backfilled TALKS_HOST=${TALKS_HOST} into .env"
     fi
 fi

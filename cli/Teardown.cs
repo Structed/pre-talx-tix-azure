@@ -74,17 +74,26 @@ public static class Teardown
 
     private static string? FindInfraDir()
     {
-        // Try relative to current directory first
-        var candidates = new[]
+        // Walk up from current directory
+        var dir = Directory.GetCurrentDirectory();
+        while (dir != null)
         {
-            Path.Combine(Directory.GetCurrentDirectory(), "infra"),
-            Path.Combine(AppContext.BaseDirectory, "..", "infra"),
-        };
+            var infraPath = Path.Combine(dir, "infra");
+            if (Directory.Exists(infraPath) && File.Exists(Path.Combine(infraPath, "Pulumi.yaml")))
+                return Path.GetFullPath(infraPath);
+            dir = Directory.GetParent(dir)?.FullName;
+        }
 
-        foreach (var dir in candidates)
+        // Walk up from the executable location
+        dir = AppContext.BaseDirectory;
+        for (var i = 0; i < 10; i++)
         {
-            if (Directory.Exists(dir) && File.Exists(Path.Combine(dir, "Pulumi.yaml")))
-                return Path.GetFullPath(dir);
+            var infraPath = Path.Combine(dir, "infra");
+            if (Directory.Exists(infraPath) && File.Exists(Path.Combine(infraPath, "Pulumi.yaml")))
+                return Path.GetFullPath(infraPath);
+            var parent = Directory.GetParent(dir);
+            if (parent == null) break;
+            dir = parent.FullName;
         }
 
         return null;

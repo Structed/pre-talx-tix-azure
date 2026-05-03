@@ -31,12 +31,22 @@ fi
 # Compute TICKETS_HOST / TALKS_HOST if not set (backward compat)
 if [ -z "${TICKETS_HOST:-}" ]; then
     TICKETS_HOST="${SUBDOMAIN_PREFIX:-}tickets.${DOMAIN}"
-    echo "TICKETS_HOST=${TICKETS_HOST}" >> .env
+    # Update existing blank entry or append
+    if grep -q '^TICKETS_HOST=' .env 2>/dev/null; then
+        sed -i "s|^TICKETS_HOST=.*|TICKETS_HOST=${TICKETS_HOST}|" .env
+    else
+        echo "TICKETS_HOST=${TICKETS_HOST}" >> .env
+    fi
     echo "Computed TICKETS_HOST=${TICKETS_HOST}"
 fi
 if [ -z "${TALKS_HOST:-}" ]; then
     TALKS_HOST="${SUBDOMAIN_PREFIX:-}talks.${DOMAIN}"
-    echo "TALKS_HOST=${TALKS_HOST}" >> .env
+    # Update existing blank entry or append
+    if grep -q '^TALKS_HOST=' .env 2>/dev/null; then
+        sed -i "s|^TALKS_HOST=.*|TALKS_HOST=${TALKS_HOST}|" .env
+    else
+        echo "TALKS_HOST=${TALKS_HOST}" >> .env
+    fi
     echo "Computed TALKS_HOST=${TALKS_HOST}"
 fi
 

@@ -365,10 +365,9 @@ public static partial class Provision
             AnsiConsole.MarkupLine($"  [green]SSH:[/]     ssh azureuser@{vmIp}");
         }
 
-        // Derive hostnames based on environment
-        var subdomainPrefix = isDev ? "dev-" : "";
-        var ticketsHost = $"{subdomainPrefix}tickets.{domain}";
-        var talksHost = $"{subdomainPrefix}talks.{domain}";
+        // Derive hostnames using the actual Pulumi outputs or config
+        var ticketsHost = GetPulumiOutput("ticketsHost") ?? $"{(isDev ? "dev-" : "")}tickets.{domain}";
+        var talksHost = GetPulumiOutput("talksHost") ?? $"{(isDev ? "dev-" : "")}talks.{domain}";
 
         AnsiConsole.MarkupLine($"  [green]Pretix:[/]  https://{ticketsHost}");
         AnsiConsole.MarkupLine($"  [green]Pretalx:[/] https://{talksHost}");
