@@ -70,6 +70,16 @@ public static class Teardown
         AnsiConsole.WriteLine();
         AnsiConsole.MarkupLine($"[green]✓[/] Stack [yellow]{stack}[/] destroyed successfully.");
         AnsiConsole.MarkupLine("[grey]All Azure resources have been removed.[/]");
+
+        // Warn about stale connection config
+        var config = AppConfig.Load();
+        if (config.IsConfigured)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine($"[yellow]Note:[/] CLI config still points to [yellow]{config.Host}[/].");
+            AnsiConsole.MarkupLine("Run [blue]tixtalk connect[/] to reconfigure or provision a new server.");
+        }
+
         return 0;
     }
 

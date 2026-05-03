@@ -235,8 +235,8 @@ retry() {
         // DNS records are now managed by Pulumi (CloudflareDnsStack) instead of cloud-init,
         // so they are automatically cleaned up on `pulumi destroy`.
 
-        // Configure swap (2 GB) to prevent OOM freezes — guarded for idempotency
-        sb.Append("if ! swapon --show | grep -q /swapfile; then\n");
+        // Configure swap (2 GB) to prevent OOM freezes — skip if any swap is already active
+        sb.Append("if [ \"$(swapon --show --noheadings | wc -l)\" -eq 0 ]; then\n");
         sb.Append("  echo 'Configuring 2 GB swap...'\n");
         sb.Append("  fallocate -l 2G /swapfile\n");
         sb.Append("  chmod 600 /swapfile\n");
@@ -247,7 +247,7 @@ retry() {
         sb.Append("  fi\n");
         sb.Append("  echo 'Swap configured.'\n");
         sb.Append("else\n");
-        sb.Append("  echo 'Swap already configured.'\n");
+        sb.Append("  echo 'Swap already active — skipping.'\n");
         sb.Append("fi\n");
         sb.Append("\n");
 

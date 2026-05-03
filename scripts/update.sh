@@ -120,7 +120,7 @@ if [ "${ENVIRONMENT:-prod}" = "prod" ]; then
 else
     echo "Skipping backup cron (${ENVIRONMENT} environment)"
     # Remove any existing backup cron from the project owner's crontab
-    if install_cron_as_owner crontab -l 2>/dev/null | grep -q "# tixtalk-backup"; then
+    if install_cron_as_owner crontab -l 2>/dev/null | grep -qE "# tixtalk-backup|tixtalk-backup\.log"; then
         echo "Removing stale backup cron entry..."
         if [ "$(id -un)" = "$PROJECT_OWNER" ]; then
             ( crontab -l 2>/dev/null | grep -v "# tixtalk-backup" | grep -v "tixtalk-backup\.log" || true ) | crontab -
