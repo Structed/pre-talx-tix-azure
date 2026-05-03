@@ -45,6 +45,7 @@ public static class Dev
         {
             "up" => Up(repoDir, subArgs),
             "down" => Down(repoDir, subArgs),
+            "wipe" or "reset" => DownWithVolumes(repoDir),
             "status" or "ps" => Status(repoDir),
             "logs" => Logs(repoDir, subArgs),
             "shell" => Shell(repoDir, subArgs),
@@ -71,7 +72,7 @@ public static class Dev
                 .AddChoices(
                     "Start (up -d)",
                     "Stop (down)",
-                    "Stop & remove volumes (down -v)",
+                    "Wipe all data (reset)",
                     "Status",
                     "View logs",
                     "Restart",
@@ -84,7 +85,7 @@ public static class Dev
         {
             "Start (up -d)" => Up(repoDir, []),
             "Stop (down)" => Down(repoDir, []),
-            "Stop & remove volumes (down -v)" => DownWithVolumes(repoDir),
+            "Wipe all data (reset)" => DownWithVolumes(repoDir),
             "Status" => Status(repoDir),
             "View logs" => PromptLogs(repoDir),
             "Restart" => Restart(repoDir),
@@ -257,7 +258,7 @@ public static class Dev
 
         table.AddRow("[green]up[/]", "Start the local dev environment (detached)");
         table.AddRow("[green]down[/]", "Stop and remove containers");
-        table.AddRow("[green]down -v[/]", "Stop, remove containers, and delete volumes (clean slate)");
+        table.AddRow("[green]wipe[/]", "Stop, remove containers, and delete all data (clean slate)");
         table.AddRow("[green]status[/]", "Show container status");
         table.AddRow("[green]logs[/] [[service]]", "Follow container logs (all or specific service)");
         table.AddRow("[green]shell[/] [[service]]", "Open bash in a container (default: pretix)");
