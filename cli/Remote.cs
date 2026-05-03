@@ -71,7 +71,7 @@ public sealed class Remote
             return RunNativeSshCommand(manageArgs);
 
         // Try SSH.NET for non-agent scenarios (unencrypted keys, password auth)
-        var cmd = $"cd {_config.ProjectDir} && ./manage.sh {manageArgs}";
+        var cmd = $"cd \"{_config.ProjectDir}\" && ./manage.sh {manageArgs}";
         var (user, hostname) = _config.ParseHost();
 
         using var client = CreateSshClient(user, hostname);
@@ -171,7 +171,7 @@ public sealed class Remote
 
         // Build a grep pattern that matches any of the requested keys
         var pattern = string.Join("|", keys.Select(k => $"^{k}="));
-        var remoteCmd = $"grep -E '{pattern}' {_config.ProjectDir}/.env 2>/dev/null";
+        var remoteCmd = $"grep -E '{pattern}' \"{_config.ProjectDir}/.env\" 2>/dev/null";
 
         string? output = null;
 
@@ -202,7 +202,7 @@ public sealed class Remote
             var eqIdx = line.IndexOf('=');
             if (eqIdx <= 0) continue;
             var key = line[..eqIdx].Trim();
-            var val = line[(eqIdx + 1)..].Trim();
+            var val = line[(eqIdx + 1)..].Trim().Trim('"').Trim('\'');
             result[key] = val;
         }
 
@@ -260,7 +260,7 @@ public sealed class Remote
 
     private int LaunchNativeSsh(string manageArgs, bool interactive)
     {
-        var remoteCmd = $"cd {_config.ProjectDir} && ./manage.sh {manageArgs}";
+        var remoteCmd = $"cd \"{_config.ProjectDir}\" && ./manage.sh {manageArgs}";
 
         var sshArgs = new List<string>();
         if (interactive)

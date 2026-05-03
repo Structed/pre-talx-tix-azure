@@ -108,6 +108,11 @@ if [ "${ENVIRONMENT:-prod}" = "prod" ]; then
     install_cron_as_owner bash "$SCRIPT_DIR/backup.sh" --install-cron
 else
     echo "Skipping backup cron (${ENVIRONMENT} environment)"
+    # Remove any existing backup cron from a previous prod or pre-upgrade config
+    if crontab -l 2>/dev/null | grep -q "# tixtalk-backup"; then
+        echo "Removing stale backup cron entry..."
+        ( crontab -l 2>/dev/null | grep -v "# tixtalk-backup" | grep -v "tixtalk-backup\.log" || true ) | crontab -
+    fi
 fi
 
 echo ""

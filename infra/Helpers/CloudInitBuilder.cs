@@ -252,8 +252,9 @@ retry() {
         sb.Append("\n");
 
         // Configure sysctl for Redis (avoid background save failures) — guarded for idempotency
-        sb.Append("if ! grep -q 'vm.overcommit_memory' /etc/sysctl.conf; then\n");
+        sb.Append("if ! grep -qx 'vm.overcommit_memory = 1' /etc/sysctl.conf; then\n");
         sb.Append("  echo 'Configuring system for Redis...'\n");
+        sb.Append("  sed -i '/^vm\\.overcommit_memory/d' /etc/sysctl.conf\n");
         sb.Append("  sysctl vm.overcommit_memory=1\n");
         sb.Append("  echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf\n");
         sb.Append("else\n");

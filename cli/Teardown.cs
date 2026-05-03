@@ -105,10 +105,12 @@ public static class Teardown
         var psi = new ProcessStartInfo
         {
             FileName = "pulumi",
-            Arguments = arguments,
             WorkingDirectory = workingDir,
             UseShellExecute = false,
         };
+
+        foreach (var arg in arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+            psi.ArgumentList.Add(arg);
 
         try
         {

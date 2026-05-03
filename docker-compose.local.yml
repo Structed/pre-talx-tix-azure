@@ -8,8 +8,8 @@ services:
     env_file: !override
       - .env.local
     ports: !override
-      - "8000:8000"
-      - "8001:8001"
+      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:8001:8001"
     volumes: !override
       - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
       - pretalx_data:/srv/pretalx:ro

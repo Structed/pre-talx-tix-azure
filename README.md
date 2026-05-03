@@ -13,8 +13,8 @@ tixtalk provision    # Interactive wizard → fully running deployment
 | **Caddy** | `caddy:2-alpine` | Reverse proxy + automatic Let's Encrypt TLS |
 | **PostgreSQL** | `postgres:16-alpine` | Shared database (pretix + pretalx DBs) |
 | **Redis** | `redis:7-alpine` | Shared cache + Celery task queue |
-| **Pretix** | `pretix/standalone` | Ticketing at `tickets.yourdomain.com` |
-| **Pretalx** | `pretalx/standalone` | CfP/scheduling at `talks.yourdomain.com` |
+| **Pretix** | `pretix/standalone` | Ticketing (default: `tickets.<DOMAIN>`) |
+| **Pretalx** | `pretalx/standalone` | CfP/scheduling (default: `talks.<DOMAIN>`) |
 
 ## Architecture
 
@@ -64,9 +64,9 @@ The interactive wizard asks for your domain, SSH key, and Azure region, then:
 3. VM cloud-init installs Docker, clones repo, starts services, runs migrations, sets up periodic tasks, and configures daily backups
 4. Configures the `tixtalk` CLI to connect to the new server
 
-After ~5 minutes your apps are live. Point DNS and visit them:
-- **Pretix**: `https://tickets.yourdomain.com`
-- **Pretalx**: `https://talks.yourdomain.com`
+After ~5 minutes your apps are live:
+- **Pretix**: `https://<TICKETS_HOST>` (default: `tickets.<DOMAIN>`)
+- **Pretalx**: `https://<TALKS_HOST>` (default: `talks.<DOMAIN>`)
 
 ### Manual Pulumi setup (advanced)
 
@@ -104,14 +104,14 @@ Cloud-init runs on first boot (~5 min): installs Docker, starts services, runs m
 Point DNS to the VM IP from `pulumi stack output vmPublicIp`:
 
 ```
-tickets.yourdomain.com → <vmPublicIp>
-talks.yourdomain.com   → <vmPublicIp>
+<TICKETS_HOST> → <vmPublicIp>
+<TALKS_HOST>   → <vmPublicIp>
 ```
 
 If you configured Cloudflare, DNS records are created automatically.
 
-- **Pretix**: `https://tickets.yourdomain.com`
-- **Pretalx**: `https://talks.yourdomain.com`
+- **Pretix**: `https://<TICKETS_HOST>`
+- **Pretalx**: `https://<TALKS_HOST>`
 
 Both apps have web-based setup wizards on first visit.
 
@@ -257,7 +257,7 @@ tixtalk dev superuser
 
 ## Staging / Dev Environment (Azure)
 
-Deploy a separate Azure VM with prefixed subdomains (`dev-tickets.yourdomain.com` / `dev-talks.yourdomain.com`) that doesn't conflict with production.
+Deploy a separate Azure VM with prefixed subdomains (`dev-tickets.<DOMAIN>` / `dev-talks.<DOMAIN>`) that doesn't conflict with production.
 
 ### Provision
 
@@ -290,7 +290,7 @@ tixtalk teardown     # Select "dev" stack — removes VM, DNS, IP, everything
 
 ### Migration note
 
-If you previously provisioned a `dev` stack, its DNS records (`tickets.yourdomain.com`) may conflict with production. Destroy the old stack and re-provision to get the new prefixed records.
+If you previously provisioned a `dev` stack, its DNS records (`tickets.<DOMAIN>`) may conflict with production. Destroy the old stack and re-provision to get the new prefixed records.
 
 ## Day-2 Operations
 
@@ -365,8 +365,8 @@ Runs at 3:00 AM daily. Backups older than 30 days are auto-deleted.
 
 Both apps are multi-tenant — create new events in the web UI each year. No infrastructure changes needed:
 
-- **Pretix**: `https://tickets.yourdomain.com/<organizer>/<year>/`
-- **Pretalx**: `https://talks.yourdomain.com/<event-slug>/`
+- **Pretix**: `https://<TICKETS_HOST>/<organizer>/<year>/`
+- **Pretalx**: `https://<TALKS_HOST>/<event-slug>/`
 
 ## Azure Communication Services (Email)
 
@@ -476,7 +476,7 @@ If you already have a VPS (or prefer not to use Pulumi), you can deploy directly
 
 ### Steps
 
-1. **Set up DNS** — Point `tickets.yourdomain.com` and `talks.yourdomain.com` to your server IP.
+1. **Set up DNS** — Point your hostnames (default: `tickets.<DOMAIN>` and `talks.<DOMAIN>`) to your server IP.
 
 2. **Clone and configure:**
 
@@ -509,7 +509,7 @@ docker compose exec pretalx pretalx migrate
 docker compose exec pretalx pretalx rebuild
 ```
 
-5. **Access your apps** at `https://tickets.yourdomain.com` and `https://talks.yourdomain.com`.
+5. **Access your apps** at `https://<TICKETS_HOST>` and `https://<TALKS_HOST>` (defaults to `tickets.<DOMAIN>` and `talks.<DOMAIN>`).
 
 See [Configuration Reference](#configuration-reference) for all `.env` variables (the `.env Equivalent` column).
 

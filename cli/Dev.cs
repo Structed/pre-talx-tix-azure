@@ -158,13 +158,21 @@ public static class Dev
     {
         var service = extraArgs.Length > 0 ? extraArgs[0] : "both";
 
+        if (service is not "pretix" and not "pretalx" and not "both")
+        {
+            AnsiConsole.MarkupLine($"[red]Unknown service '{Markup.Escape(service)}'. Use 'pretix', 'pretalx', or 'both'.[/]");
+            return 1;
+        }
+
+        var exitCode = 0;
+
         if (service is "pretix" or "both")
         {
             AnsiConsole.Write(new Rule("[green]Pretix Superuser[/]").RuleStyle("green"));
             AnsiConsole.MarkupLine("[grey]Creating admin account for Pretix...[/]");
             AnsiConsole.WriteLine();
             var result = RunCompose(repoDir, ["exec", "pretix", "pretix", "createsuperuser"]);
-            if (result != 0 && service == "pretix") return result;
+            if (result != 0) exitCode = result;
         }
 
         if (service is "pretalx" or "both")
@@ -174,10 +182,10 @@ public static class Dev
             AnsiConsole.MarkupLine("[grey]Creating admin account for Pretalx...[/]");
             AnsiConsole.WriteLine();
             var result = RunCompose(repoDir, ["exec", "pretalx", "python", "-m", "pretalx", "createsuperuser"]);
-            if (result != 0) return result;
+            if (result != 0) exitCode = result;
         }
 
-        return 0;
+        return exitCode;
     }
 
     private static int PromptSuperUser(string repoDir)
