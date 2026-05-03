@@ -243,7 +243,7 @@ This gives you:
 
 The `.env.local` file comes with pre-filled dev credentials. Edit it to customize.
 
-To stop: `Ctrl+C` (or `./manage.sh dev down` / `tixtalk dev down`)
+To stop: `./manage.sh dev down` or `tixtalk dev down`
 
 ### First-time local setup
 
@@ -519,10 +519,12 @@ See [Configuration Reference](#configuration-reference) for all `.env` variables
 ```bash
 tixtalk teardown     # Interactive — select stack (dev or prod)
 
-# Or manually:
+# Or manually (requires repo checkout):
 cd infra
 pulumi destroy    # Removes all Azure resources
 ```
+
+> **Note:** `tixtalk teardown` requires a local clone of this repository (it runs Pulumi from the `infra/` directory).
 
 ### Manual VPS
 

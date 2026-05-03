@@ -246,10 +246,14 @@ public static partial class Provision
         SetConfig("tixtalk:adminEmail", adminEmail);
         SetConfig("tixtalk:environment", environment);
         
-        // Auto-set subdomain prefix for dev environments
+        // Auto-set subdomain prefix for dev environments, clear for prod
         if (isDev)
         {
             SetConfig("tixtalk:subdomainPrefix", "dev-");
+        }
+        else
+        {
+            SetConfig("tixtalk:subdomainPrefix", "");
         }
         
         // Email configuration

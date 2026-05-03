@@ -99,7 +99,7 @@ int ShowHelp()
 
     table.AddRow("[green]dev[/] [[up|down|status|logs|shell|restart]]", "Manage local dev environment");
     table.AddRow("[green]provision[/]", "Provision a new Azure VM (interactive wizard)");
-    table.AddRow("[green]teardown[/]", "Destroy all Azure resources for a stack");
+    table.AddRow("[green]teardown[/]", "Destroy all Azure resources for a stack (requires repo checkout)");
     table.AddRow("[green]connect[/] [[user@host]]", "SSH to the server (or configure a new connection)");
     table.AddRow("[green]ssh[/] <open|close|status|config>", "Control Azure NSG SSH access");
     table.AddRow("[green]status[/]", "Show service status, URLs, and disk usage");
