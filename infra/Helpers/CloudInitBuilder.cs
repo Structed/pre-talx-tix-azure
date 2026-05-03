@@ -234,19 +234,30 @@ retry() {
         // DNS records are now managed by Pulumi (CloudflareDnsStack) instead of cloud-init,
         // so they are automatically cleaned up on `pulumi destroy`.
 
-        // Configure swap (2 GB) to prevent OOM freezes
-        sb.Append("echo 'Configuring 2 GB swap...'\n");
-        sb.Append("fallocate -l 2G /swapfile\n");
-        sb.Append("chmod 600 /swapfile\n");
-        sb.Append("mkswap /swapfile\n");
-        sb.Append("swapon /swapfile\n");
-        sb.Append("echo '/swapfile none swap sw 0 0' >> /etc/fstab\n");
+        // Configure swap (2 GB) to prevent OOM freezes — guarded for idempotency
+        sb.Append("if ! swapon --show | grep -q /swapfile; then\n");
+        sb.Append("  echo 'Configuring 2 GB swap...'\n");
+        sb.Append("  fallocate -l 2G /swapfile\n");
+        sb.Append("  chmod 600 /swapfile\n");
+        sb.Append("  mkswap /swapfile\n");
+        sb.Append("  swapon /swapfile\n");
+        sb.Append("  if ! grep -q '/swapfile' /etc/fstab; then\n");
+        sb.Append("    echo '/swapfile none swap sw 0 0' >> /etc/fstab\n");
+        sb.Append("  fi\n");
+        sb.Append("  echo 'Swap configured.'\n");
+        sb.Append("else\n");
+        sb.Append("  echo 'Swap already configured.'\n");
+        sb.Append("fi\n");
         sb.Append("\n");
 
-        // Configure sysctl for Redis (avoid background save failures)
-        sb.Append("echo 'Configuring system for Redis...'\n");
-        sb.Append("sysctl vm.overcommit_memory=1\n");
-        sb.Append("echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf\n");
+        // Configure sysctl for Redis (avoid background save failures) — guarded for idempotency
+        sb.Append("if ! grep -q 'vm.overcommit_memory' /etc/sysctl.conf; then\n");
+        sb.Append("  echo 'Configuring system for Redis...'\n");
+        sb.Append("  sysctl vm.overcommit_memory=1\n");
+        sb.Append("  echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf\n");
+        sb.Append("else\n");
+        sb.Append("  echo 'Redis sysctl already configured.'\n");
+        sb.Append("fi\n");
         sb.Append("\n");
 
         // Start services - use DNS challenge compose file if configured

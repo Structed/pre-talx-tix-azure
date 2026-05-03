@@ -37,8 +37,8 @@ cmd_status() {
     echo ""
 
     if [ -n "${DOMAIN:-}" ] && [ "$DOMAIN" != "yourdomain.com" ]; then
-        local t_host="${TICKETS_HOST:-tickets.${DOMAIN}}"
-        local x_host="${TALKS_HOST:-talks.${DOMAIN}}"
+        local t_host="${TICKETS_HOST:-${SUBDOMAIN_PREFIX:-}tickets.${DOMAIN}}"
+        local x_host="${TALKS_HOST:-${SUBDOMAIN_PREFIX:-}talks.${DOMAIN}}"
         echo "  Pretix:  https://${t_host}"
         echo "  Pretalx: https://${x_host}"
         echo ""

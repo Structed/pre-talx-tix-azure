@@ -41,8 +41,9 @@ public static class Teardown
         var infraDir = FindInfraDir();
         if (infraDir == null)
         {
-            AnsiConsole.MarkupLine("[red]Could not find infra/ directory.[/]");
-            AnsiConsole.MarkupLine("[grey]Ensure you are running from the tixtalk repository root.[/]");
+            AnsiConsole.MarkupLine("[red]Could not find infra/ directory with Pulumi.yaml.[/]");
+            AnsiConsole.MarkupLine("[grey]The teardown command requires the tixtalk repository checkout.[/]");
+            AnsiConsole.MarkupLine("[grey]Clone the repo and run from within it, or cd to the repo root.[/]");
             return 1;
         }
 
