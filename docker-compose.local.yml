@@ -1,9 +1,12 @@
 # Local development override — HTTP only, no TLS, no Cloudflare
 # Usage: ./manage.sh dev   (or: tixtalk dev up)
-# Note: the base compose file requires .env to exist; the wrapper commands handle this automatically.
+# Note: uses project name 'tixtalk-local' to isolate from production volumes.
+name: tixtalk-local
 services:
   caddy:
     image: caddy:2.9-alpine
+    env_file: !override
+      - .env.local
     ports: !override
       - "8000:8000"
       - "8001:8001"

@@ -190,11 +190,6 @@ cmd_dev() {
         echo "    git checkout -- .env.local"
         exit 1
     fi
-    # Base compose requires .env for the caddy service env_file directive
-    if [ ! -f .env ]; then
-        cp .env.local .env
-        echo "Copied .env.local → .env (required by base compose)"
-    fi
 
     local compose="docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local"
 
@@ -298,7 +293,7 @@ EOF
 # ---- Interactive Menu --------------------------------------------------------
 
 show_menu() {
-    load_env
+    load_env || true
 
     local domain_info=""
     if [ -n "${DOMAIN:-}" ] && [ "$DOMAIN" != "yourdomain.com" ]; then

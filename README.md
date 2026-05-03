@@ -424,10 +424,10 @@ pulumi config set tixtalk:cloudflareZoneId YOUR_ZONE_ID
 
 ### TLS modes
 
-| Mode | `cloudflareDnsChallenge` | Cloudflare proxy | How it works |
+| Mode | `CLOUDFLARE_DNS_CHALLENGE` | Cloudflare proxy | How it works |
 |------|-------------------------|-----------------|--------------|
-| **HTTP challenge** (default) | `false` | Off (grey cloud) | Caddy validates via port 80. Simpler, standard image. |
-| **DNS challenge** | `true` | On (orange cloud) | Caddy validates via Cloudflare API. Hides server IP, full CDN. |
+| **HTTP challenge** | `false` | Off (grey cloud) | Caddy validates via port 80. Simpler, standard image. |
+| **DNS challenge** (Pulumi default) | `true` | On (orange cloud) | Caddy validates via Cloudflare API. Hides server IP, full CDN. |
 
 To use DNS challenge:
 ```bash

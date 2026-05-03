@@ -13,7 +13,7 @@ public static class Dev
         "compose",
         "-f", "docker-compose.yml",
         "-f", "docker-compose.local.yml",
-        "--env-file", ".env.local"
+        "--env-file", ".env.local",
     ];
 
     public static int Run(string[] args)
@@ -32,8 +32,6 @@ public static class Dev
             AnsiConsole.MarkupLine("[grey]  The file should already exist in the repo.[/]");
             return 1;
         }
-
-        EnsureDotEnv(repoDir);
 
         if (args.Length == 0)
             return ShowMenu(repoDir);
@@ -251,21 +249,6 @@ public static class Dev
             AnsiConsole.MarkupLine($"[red]Failed to run docker compose:[/] {Markup.Escape(ex.Message)}");
             AnsiConsole.MarkupLine("[grey]Ensure Docker is installed and running.[/]");
             return 1;
-        }
-    }
-
-    /// <summary>
-    /// The base docker-compose.yml has env_file: .env on the caddy service.
-    /// Ensure .env exists (copy from .env.local if missing).
-    /// </summary>
-    private static void EnsureDotEnv(string repoDir)
-    {
-        var dotEnv = Path.Combine(repoDir, ".env");
-        if (!File.Exists(dotEnv))
-        {
-            var localEnv = Path.Combine(repoDir, ".env.local");
-            File.Copy(localEnv, dotEnv);
-            AnsiConsole.MarkupLine("[grey]Copied .env.local → .env (required by base compose)[/]");
         }
     }
 

@@ -102,7 +102,13 @@ install_cron_as_owner() {
 echo ""
 echo "Ensuring cron jobs are up-to-date..."
 install_cron_as_owner bash "$SCRIPT_DIR/cron.sh" --install
-install_cron_as_owner bash "$SCRIPT_DIR/backup.sh" --install-cron
+
+# Only install backup cron for production (dev environments skip daily backups)
+if [ "${ENVIRONMENT:-prod}" = "prod" ]; then
+    install_cron_as_owner bash "$SCRIPT_DIR/backup.sh" --install-cron
+else
+    echo "Skipping backup cron (${ENVIRONMENT} environment)"
+fi
 
 echo ""
 echo "=== Update complete ==="

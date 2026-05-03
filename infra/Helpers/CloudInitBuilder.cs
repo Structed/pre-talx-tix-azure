@@ -137,6 +137,7 @@ public static class CloudInitBuilder
         sb.Append($"SMTP_PORT={cfg.SmtpPort}\n");
         sb.Append($"SMTP_USER={smtpUser}\n");
         sb.Append($"SMTP_PASSWORD={smtpPassword}\n");
+        sb.Append($"ENVIRONMENT={cfg.Environment}\n");
         return sb.ToString();
     }
 
