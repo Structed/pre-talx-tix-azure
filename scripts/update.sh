@@ -42,6 +42,17 @@ if [ -f .env ]; then
             echo "Backfilled TALKS_HOST=${TALKS_HOST} into .env"
         fi
     fi
+    # Backfill ENVIRONMENT if missing or empty (introduced in v2.x; all pre-existing stacks are prod)
+    if ! grep -q '^ENVIRONMENT=.\+' .env 2>/dev/null; then
+        ENVIRONMENT="prod"
+        if grep -q '^ENVIRONMENT=' .env 2>/dev/null; then
+            sed -i "s|^ENVIRONMENT=.*|ENVIRONMENT=${ENVIRONMENT}|" .env
+        else
+            echo "" >> .env
+            echo "ENVIRONMENT=${ENVIRONMENT}" >> .env
+        fi
+        echo "Backfilled ENVIRONMENT=${ENVIRONMENT} into .env"
+    fi
 fi
 
 # Parse optional tag overrides
