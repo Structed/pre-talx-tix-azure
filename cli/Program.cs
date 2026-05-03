@@ -121,6 +121,7 @@ int ShowHelp()
     AnsiConsole.Write(table);
 
     AnsiConsole.WriteLine();
+    AnsiConsole.MarkupLine("[grey]Commands marked 'requires repo checkout' need the tixtalk repository on disk.[/]");
     AnsiConsole.MarkupLine("Run [yellow]tixtalk[/] without arguments for an interactive menu.");
     AnsiConsole.MarkupLine($"Config: [grey]{Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".tixtalk", "config.json")}[/]");
 

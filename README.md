@@ -123,8 +123,8 @@ After deployment, `pulumi stack output` displays:
 |--------|-------------|
 | `vmPublicIp` | VM public IP address |
 | `sshCommand` | Ready-to-use SSH command |
-| `pretixUrl` | `https://tickets.<domain>` |
-| `pretalxUrl` | `https://talks.<domain>` |
+| `pretixUrl` | `https://<TICKETS_HOST>` |
+| `pretalxUrl` | `https://<TALKS_HOST>` |
 
 ## Configuration Reference
 
@@ -140,7 +140,7 @@ All configuration is managed via Pulumi config (`pulumi config set <key> <value>
 | `azure-native:location` | No | `westeurope` | — | Azure region |
 | `tixtalk:cloudflareApiToken` | No | — | `CLOUDFLARE_API_TOKEN` | Cloudflare API token (use `--secret`) |
 | `tixtalk:cloudflareZoneId` | No | — | `CLOUDFLARE_ZONE_ID` | Cloudflare Zone ID |
-| `tixtalk:cloudflareDnsChallenge` | No | `false` | `CLOUDFLARE_DNS_CHALLENGE` | Use DNS challenge for TLS |
+| `tixtalk:cloudflareDnsChallenge` | No | `true` | `CLOUDFLARE_DNS_CHALLENGE` | Use DNS challenge for TLS |
 | `tixtalk:useAzureMail` | No | `true` | — | Use Azure Communication Services for email |
 | `tixtalk:acsUseCustomDomain` | No | `false` | — | Use custom domain for ACS (requires Cloudflare) |
 | `tixtalk:mailFrom` | No | `noreply@example.com` | `MAIL_FROM` | Email sender address |
@@ -225,13 +225,13 @@ When SSHed into the server directly, use `manage.sh`:
 
 ## Local Development
 
-Run the full stack on your local machine without Azure, DNS, or TLS:
+Run the full stack on your local machine without Azure, DNS, or TLS. Requires a clone of this repository (the compose files and `.env.local` must be on disk).
 
 ```bash
 # Start local dev environment (HTTP only)
 ./manage.sh dev
 
-# Or via the CLI:
+# Or via the CLI (from the repo directory):
 tixtalk dev up
 ```
 
@@ -450,10 +450,15 @@ docker compose logs pretalx --tail 50
 ```
 
 ### TLS certificate not working
-Caddy auto-provisions Let's Encrypt certs. Ensure:
-- DNS A records are pointing to the server
-- Ports 80 and 443 are open (`sudo ufw status`)
-- Check Caddy logs: `docker compose logs caddy`
+For **HTTP challenge** mode (Caddy auto-provisions Let's Encrypt certs):
+- DNS A records must point to the server
+- Ports 80 and 443 must be open (`sudo ufw status`)
+
+For **DNS challenge** mode (Caddy uses internal TLS, Cloudflare handles edge):
+- Cloudflare SSL mode must be set to "Full"
+- Cloudflare API token and Zone ID must be configured
+
+Check Caddy logs: `docker compose logs caddy`
 
 ### Database connection issues
 ```bash
