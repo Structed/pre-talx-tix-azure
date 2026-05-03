@@ -43,9 +43,13 @@ fi
 # Configure swap (2 GB) if no swap is active
 if [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
     echo "Configuring 2 GB swap..."
-    fallocate -l 2G /swapfile
-    chmod 600 /swapfile
-    mkswap /swapfile
+    if [ -f /swapfile ]; then
+        echo "Reusing existing /swapfile..."
+    else
+        fallocate -l 2G /swapfile
+        chmod 600 /swapfile
+        mkswap /swapfile
+    fi
     swapon /swapfile
     if ! grep -q '/swapfile' /etc/fstab; then
         echo '/swapfile none swap sw 0 0' >> /etc/fstab
