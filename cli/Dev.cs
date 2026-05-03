@@ -145,10 +145,15 @@ public static class Dev
         return RunCompose(repoDir, ["restart"]);
     }
 
+    // Alpine-based images (redis, caddy, postgres) don't have bash
+    private static readonly HashSet<string> AlpineServices = new(StringComparer.OrdinalIgnoreCase)
+        { "redis", "caddy", "postgres" };
+
     private static int Shell(string repoDir, string[] extraArgs)
     {
         var service = extraArgs.Length > 0 ? extraArgs[0] : "pretix";
-        return RunCompose(repoDir, ["exec", service, "bash"]);
+        var shell = AlpineServices.Contains(service) ? "sh" : "bash";
+        return RunCompose(repoDir, ["exec", service, shell]);
     }
 
     private static int SuperUser(string repoDir, string[] extraArgs)

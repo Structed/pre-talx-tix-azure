@@ -184,10 +184,16 @@ cmd_restart() {
 cmd_dev() {
     cd "$SCRIPT_DIR"
     if [ ! -f .env.local ]; then
-        echo "ERROR: .env.local not found. Copy it from the template:"
-        echo "  cp .env.local.example .env.local   (if using a custom template)"
-        echo "  Or use the provided .env.local as-is for local development."
+        echo "ERROR: .env.local not found."
+        echo "  The .env.local file should already exist in the repo."
+        echo "  If missing, re-clone the repository or restore from git:"
+        echo "    git checkout -- .env.local"
         exit 1
+    fi
+    # Base compose requires .env for the caddy service env_file directive
+    if [ ! -f .env ]; then
+        cp .env.local .env
+        echo "Copied .env.local → .env (required by base compose)"
     fi
     echo "Starting local dev environment (HTTP only)..."
     echo "  Pretix:  http://localhost:8000"

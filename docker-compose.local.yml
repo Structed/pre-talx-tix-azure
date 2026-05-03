@@ -3,12 +3,14 @@
 services:
   caddy:
     image: caddy:2.9-alpine
-    ports:
+    ports: !override
       - "8000:8000"
       - "8001:8001"
-    volumes:
+    volumes: !override
       - ./caddy/Caddyfile.local:/etc/caddy/Caddyfile:ro
       - pretalx_data:/srv/pretalx:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:8000"]
 
   pretix:
     environment:

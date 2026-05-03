@@ -13,13 +13,19 @@ cd "$PROJECT_DIR"
 load_env || true
 
 # Backfill TICKETS_HOST / TALKS_HOST if missing (added in v2.x for subdomain prefix support)
-if [ -f .env ] && ! grep -q '^TICKETS_HOST=' .env 2>/dev/null; then
-    TICKETS_HOST="${SUBDOMAIN_PREFIX:-}tickets.${DOMAIN:-localhost}"
-    TALKS_HOST="${SUBDOMAIN_PREFIX:-}talks.${DOMAIN:-localhost}"
-    echo "" >> .env
-    echo "TICKETS_HOST=${TICKETS_HOST}" >> .env
-    echo "TALKS_HOST=${TALKS_HOST}" >> .env
-    echo "Backfilled TICKETS_HOST=${TICKETS_HOST} and TALKS_HOST=${TALKS_HOST} into .env"
+if [ -f .env ]; then
+    if ! grep -q '^TICKETS_HOST=' .env 2>/dev/null; then
+        TICKETS_HOST="${SUBDOMAIN_PREFIX:-}tickets.${DOMAIN:-localhost}"
+        echo "" >> .env
+        echo "TICKETS_HOST=${TICKETS_HOST}" >> .env
+        echo "Backfilled TICKETS_HOST=${TICKETS_HOST} into .env"
+    fi
+    if ! grep -q '^TALKS_HOST=' .env 2>/dev/null; then
+        TALKS_HOST="${SUBDOMAIN_PREFIX:-}talks.${DOMAIN:-localhost}"
+        echo "" >> .env
+        echo "TALKS_HOST=${TALKS_HOST}" >> .env
+        echo "Backfilled TALKS_HOST=${TALKS_HOST} into .env"
+    fi
 fi
 
 # Parse optional tag overrides
