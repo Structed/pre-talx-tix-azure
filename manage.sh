@@ -208,7 +208,7 @@ cmd_dev() {
             echo "  Pretix:  http://localhost:8000"
             echo "  Pretalx: http://localhost:8001"
             echo ""
-            $compose up "$@"
+            $compose up -d "$@"
             ;;
         --)
             # Pass-through: ./manage.sh dev -- <any compose command>
@@ -268,7 +268,7 @@ Pretix + Pretalx Management CLI
 Usage: ./manage.sh [command] [args...]
 
 Commands:
-  dev [docker args]    Start local dev environment (HTTP only, no TLS/DNS)
+  dev [subcmd] [args]  Local dev environment (subcmds: up, down, logs, exec, ps, ...)
   setup                Install Docker & configure firewall (run once)
   deploy               First-time deployment (generates secrets, starts services)
   status               Show service status, URLs, and disk usage

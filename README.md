@@ -240,6 +240,7 @@ This gives you:
 - **Pretalx** at `http://localhost:8001`
 - PostgreSQL + Redis running locally in containers
 - No domain, no TLS, no Cloudflare required
+- SMTP is not configured — email actions will be silently skipped
 
 The `.env.local` file comes with pre-filled dev credentials. Edit it to customize.
 
