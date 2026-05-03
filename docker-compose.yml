@@ -67,7 +67,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      PRETIX_PRETIX_URL: https://${TICKETS_HOST:-tickets.${DOMAIN}}
+      PRETIX_PRETIX_URL: https://${TICKETS_HOST:-localhost}
       PRETIX_PRETIX_DATADIR: /data
       PRETIX_PRETIX_TRUST_X_FORWARDED_FOR: "on"
       PRETIX_PRETIX_TRUST_X_FORWARDED_PROTO: "on"
@@ -105,7 +105,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      PRETALX_SITE_URL: https://${TALKS_HOST:-talks.${DOMAIN}}
+      PRETALX_SITE_URL: https://${TALKS_HOST:-localhost}
       PRETALX_FILESYSTEM_DATA: /data
 
       # Database (pretalx uses PRETALX_DB_* env vars, NOT DATABASE_URL)
