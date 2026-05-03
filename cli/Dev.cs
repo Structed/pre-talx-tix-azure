@@ -49,6 +49,7 @@ public static class Dev
             "status" or "ps" => Status(repoDir),
             "logs" => Logs(repoDir, subArgs),
             "shell" => Shell(repoDir, subArgs),
+            "superuser" => SuperUser(repoDir, subArgs),
             "restart" => Restart(repoDir),
             "stop" => RunCompose(repoDir, ["stop"]),
             "start" => RunCompose(repoDir, ["start"]),
@@ -77,6 +78,7 @@ public static class Dev
                     "View logs",
                     "Restart",
                     "Open shell",
+                    "Create superuser",
                     "Quit"));
 
         AnsiConsole.WriteLine();
@@ -90,6 +92,7 @@ public static class Dev
             "View logs" => PromptLogs(repoDir),
             "Restart" => Restart(repoDir),
             "Open shell" => PromptShell(repoDir),
+            "Create superuser" => PromptSuperUser(repoDir),
             "Quit" => 0,
             _ => 0,
         };
@@ -146,6 +149,49 @@ public static class Dev
     {
         var service = extraArgs.Length > 0 ? extraArgs[0] : "pretix";
         return RunCompose(repoDir, ["exec", service, "bash"]);
+    }
+
+    private static int SuperUser(string repoDir, string[] extraArgs)
+    {
+        var service = extraArgs.Length > 0 ? extraArgs[0] : "both";
+
+        if (service is "pretix" or "both")
+        {
+            AnsiConsole.Write(new Rule("[green]Pretix Superuser[/]").RuleStyle("green"));
+            AnsiConsole.MarkupLine("[grey]Creating admin account for Pretix...[/]");
+            AnsiConsole.WriteLine();
+            var result = RunCompose(repoDir, ["exec", "pretix", "pretix", "createsuperuser"]);
+            if (result != 0 && service == "pretix") return result;
+        }
+
+        if (service is "pretalx" or "both")
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.Write(new Rule("[green]Pretalx Superuser[/]").RuleStyle("green"));
+            AnsiConsole.MarkupLine("[grey]Creating admin account for Pretalx...[/]");
+            AnsiConsole.WriteLine();
+            var result = RunCompose(repoDir, ["exec", "pretalx", "python", "-m", "pretalx", "createsuperuser"]);
+            if (result != 0) return result;
+        }
+
+        return 0;
+    }
+
+    private static int PromptSuperUser(string repoDir)
+    {
+        var service = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Create superuser for which service?")
+                .AddChoices("Both (Pretix + Pretalx)", "Pretix only", "Pretalx only"));
+
+        var arg = service switch
+        {
+            "Pretix only" => "pretix",
+            "Pretalx only" => "pretalx",
+            _ => "both",
+        };
+
+        return SuperUser(repoDir, [arg]);
     }
 
     private static int PromptLogs(string repoDir)
@@ -262,6 +308,7 @@ public static class Dev
         table.AddRow("[green]status[/]", "Show container status");
         table.AddRow("[green]logs[/] [[service]]", "Follow container logs (all or specific service)");
         table.AddRow("[green]shell[/] [[service]]", "Open bash in a container (default: pretix)");
+        table.AddRow("[green]superuser[/] [[pretix|pretalx]]", "Create admin superuser (default: both)");
         table.AddRow("[green]restart[/]", "Restart all services");
         table.AddRow("[green]stop[/]", "Stop services (keep containers)");
         table.AddRow("[green]start[/]", "Start stopped services");
