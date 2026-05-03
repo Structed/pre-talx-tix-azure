@@ -97,7 +97,7 @@ int ShowHelp()
         .AddColumn("[bold]Command[/]")
         .AddColumn("[bold]Description[/]");
 
-    table.AddRow("[green]dev[/] [[up|down|wipe|status|logs|shell|restart|stop|start|superuser]]", "Manage local dev environment");
+    table.AddRow("[green]dev[/] [[up|down|wipe|status|logs|shell|restart|stop|start|superuser]]", "Manage local dev environment (requires repo checkout)");
     table.AddRow("[green]provision[/]", "Provision a new Azure VM (interactive wizard)");
     table.AddRow("[green]teardown[/]", "Destroy all Azure resources for a stack (requires repo checkout)");
     table.AddRow("[green]connect[/] [[user@host]]", "SSH to the server (or configure a new connection)");

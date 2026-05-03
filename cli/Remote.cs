@@ -140,25 +140,112 @@ public sealed class Remote
     /// </summary>
     public string? GetRemoteDomain()
     {
+        var vars = GetRemoteEnvVars("DOMAIN");
+        vars.TryGetValue("DOMAIN", out var domain);
+        return string.IsNullOrWhiteSpace(domain) || domain == "yourdomain.com" ? null : domain;
+    }
+
+    /// <summary>
+    /// Fetch display hostnames from remote .env (TICKETS_HOST, TALKS_HOST with fallbacks).
+    /// </summary>
+    public (string ticketsHost, string talksHost) GetRemoteHosts(string domain)
+    {
+        var vars = GetRemoteEnvVars("TICKETS_HOST", "TALKS_HOST", "SUBDOMAIN_PREFIX");
+        vars.TryGetValue("TICKETS_HOST", out var th);
+        vars.TryGetValue("TALKS_HOST", out var xh);
+        vars.TryGetValue("SUBDOMAIN_PREFIX", out var prefix);
+        var ticketsHost = string.IsNullOrWhiteSpace(th) ? $"{prefix}tickets.{domain}" : th;
+        var talksHost = string.IsNullOrWhiteSpace(xh) ? $"{prefix}talks.{domain}" : xh;
+        return (ticketsHost, talksHost);
+    }
+
+    /// <summary>
+    /// Fetch one or more env vars from the remote .env file in a single SSH call.
+    /// </summary>
+    private Dictionary<string, string> GetRemoteEnvVars(params string[] keys)
+    {
+        var result = new Dictionary<string, string>();
+        if (keys.Length == 0) return result;
+
         EnsureConfigured();
 
+        // Build a grep pattern that matches any of the requested keys
+        var pattern = string.Join("|", keys.Select(k => $"^{k}="));
+        var remoteCmd = $"grep -E '{pattern}' {_config.ProjectDir}/.env 2>/dev/null";
+
+        string? output = null;
+
         if (IsSshAgentAvailable())
-            return GetRemoteDomainViaNativeSsh();
+        {
+            output = RunNativeSshCapture(remoteCmd);
+        }
+        else
+        {
+            var (user, hostname) = _config.ParseHost();
+            try
+            {
+                using var client = CreateSshClient(user, hostname);
+                client.Connect();
+                using var cmd = client.RunCommand(remoteCmd);
+                output = cmd.Result;
+            }
+            catch
+            {
+                output = RunNativeSshCapture(remoteCmd);
+            }
+        }
 
-        var (user, hostname) = _config.ParseHost();
+        if (string.IsNullOrWhiteSpace(output)) return result;
 
+        foreach (var line in output.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var eqIdx = line.IndexOf('=');
+            if (eqIdx <= 0) continue;
+            var key = line[..eqIdx].Trim();
+            var val = line[(eqIdx + 1)..].Trim();
+            result[key] = val;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Run an SSH command and capture its stdout. Returns null on failure.
+    /// </summary>
+    private string? RunNativeSshCapture(string remoteCmd)
+    {
         try
         {
-            using var client = CreateSshClient(user, hostname);
-            client.Connect();
-            using var cmd = client.RunCommand(
-                $"grep '^DOMAIN=' {_config.ProjectDir}/.env 2>/dev/null | cut -d= -f2");
-            var domain = cmd.Result.Trim();
-            return string.IsNullOrWhiteSpace(domain) || domain == "yourdomain.com" ? null : domain;
+            var psi = new ProcessStartInfo
+            {
+                FileName = "ssh",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+
+            if (!string.IsNullOrWhiteSpace(_config.KeyFile))
+            {
+                psi.ArgumentList.Add("-i");
+                psi.ArgumentList.Add(ExpandPath(_config.KeyFile));
+            }
+
+            psi.ArgumentList.Add("-o");
+            psi.ArgumentList.Add("BatchMode=yes");
+            psi.ArgumentList.Add(_config.Host);
+            psi.ArgumentList.Add(remoteCmd);
+
+            using var process = Process.Start(psi);
+            if (process == null) return null;
+
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            return string.IsNullOrWhiteSpace(output) ? null : output;
         }
         catch
         {
-            return GetRemoteDomainViaNativeSsh();
+            return null;
         }
     }
 
@@ -242,45 +329,6 @@ public sealed class Remote
             AnsiConsole.MarkupLine($"[red]Failed to launch ssh:[/] {Markup.Escape(ex.Message)}");
             AnsiConsole.MarkupLine("[grey]Make sure 'ssh' is on your PATH (built-in on Windows 10+, macOS, Linux).[/]");
             return 1;
-        }
-    }
-
-    private string? GetRemoteDomainViaNativeSsh()
-    {
-        try
-        {
-            var remoteCmd = $"grep '^DOMAIN=' {_config.ProjectDir}/.env 2>/dev/null | cut -d= -f2";
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = "ssh",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-            };
-
-            if (!string.IsNullOrWhiteSpace(_config.KeyFile))
-            {
-                psi.ArgumentList.Add("-i");
-                psi.ArgumentList.Add(ExpandPath(_config.KeyFile));
-            }
-
-            psi.ArgumentList.Add("-o");
-            psi.ArgumentList.Add("BatchMode=yes");
-            psi.ArgumentList.Add(_config.Host);
-            psi.ArgumentList.Add(remoteCmd);
-
-            using var process = Process.Start(psi);
-            if (process == null) return null;
-
-            var domain = process.StandardOutput.ReadToEnd().Trim();
-            process.WaitForExit();
-
-            return string.IsNullOrWhiteSpace(domain) || domain == "yourdomain.com" ? null : domain;
-        }
-        catch
-        {
-            return null;
         }
     }
 

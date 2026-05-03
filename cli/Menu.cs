@@ -41,8 +41,9 @@ public static class Menu
 
         if (domain != null)
         {
-            AnsiConsole.MarkupLine($"  [green]Pretix:[/]  https://tickets.{domain}");
-            AnsiConsole.MarkupLine($"  [green]Pretalx:[/] https://talks.{domain}");
+            var (ticketsHost, talksHost) = remote.GetRemoteHosts(domain);
+            AnsiConsole.MarkupLine($"  [green]Pretix:[/]  https://{ticketsHost}");
+            AnsiConsole.MarkupLine($"  [green]Pretalx:[/] https://{talksHost}");
             AnsiConsole.WriteLine();
         }
 

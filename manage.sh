@@ -200,7 +200,8 @@ cmd_dev() {
 
     # Default to 'up' if no subcommand given
     local subcmd="${1:-up}"
-    shift 2>/dev/null || true
+    # Remove the subcommand from args, leaving remaining args for compose
+    if [ $# -gt 0 ]; then shift; fi
 
     case "$subcmd" in
         up)
