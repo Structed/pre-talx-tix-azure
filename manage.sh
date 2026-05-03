@@ -195,11 +195,30 @@ cmd_dev() {
         cp .env.local .env
         echo "Copied .env.local → .env (required by base compose)"
     fi
-    echo "Starting local dev environment (HTTP only)..."
-    echo "  Pretix:  http://localhost:8000"
-    echo "  Pretalx: http://localhost:8001"
-    echo ""
-    docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local up "$@"
+
+    local compose="docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local"
+
+    # Default to 'up' if no subcommand given
+    local subcmd="${1:-up}"
+    shift 2>/dev/null || true
+
+    case "$subcmd" in
+        up)
+            echo "Starting local dev environment (HTTP only)..."
+            echo "  Pretix:  http://localhost:8000"
+            echo "  Pretalx: http://localhost:8001"
+            echo ""
+            $compose up "$@"
+            ;;
+        --)
+            # Pass-through: ./manage.sh dev -- <any compose command>
+            $compose "$@"
+            ;;
+        *)
+            # Route any other compose subcommand (down, exec, logs, ps, etc.)
+            $compose "$subcmd" "$@"
+            ;;
+    esac
 }
 
 cmd_stop() {

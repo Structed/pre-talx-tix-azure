@@ -251,7 +251,7 @@ After starting for the first time, create admin accounts:
 
 ```bash
 tixtalk dev superuser
-# Or: ./manage.sh dev -- exec pretix pretix createsuperuser
+# Or: ./manage.sh dev exec pretix pretix createsuperuser
 ```
 
 ## Staging / Dev Environment (Azure)
