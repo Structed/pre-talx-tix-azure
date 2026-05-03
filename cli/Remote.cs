@@ -14,6 +14,15 @@ public sealed class Remote
     }
 
     /// <summary>
+    /// Returns the project directory path safe for use inside shell double-quotes.
+    /// Replaces a leading ~ with $HOME so tilde expansion works inside quotes.
+    /// </summary>
+    private string ShellSafeDir =>
+        _config.ProjectDir.StartsWith("~/")
+            ? "$HOME" + _config.ProjectDir[1..]
+            : _config.ProjectDir;
+
+    /// <summary>
     /// Open an interactive SSH session (raw shell) to the remote server.
     /// </summary>
     public int OpenSession()
@@ -71,7 +80,7 @@ public sealed class Remote
             return RunNativeSshCommand(manageArgs);
 
         // Try SSH.NET for non-agent scenarios (unencrypted keys, password auth)
-        var cmd = $"cd \"{_config.ProjectDir}\" && ./manage.sh {manageArgs}";
+        var cmd = $"cd \"{ShellSafeDir}\" && ./manage.sh {manageArgs}";
         var (user, hostname) = _config.ParseHost();
 
         using var client = CreateSshClient(user, hostname);
@@ -171,7 +180,7 @@ public sealed class Remote
 
         // Build a grep pattern that matches any of the requested keys
         var pattern = string.Join("|", keys.Select(k => $"^{k}="));
-        var remoteCmd = $"grep -E '{pattern}' \"{_config.ProjectDir}/.env\" 2>/dev/null";
+        var remoteCmd = $"grep -E '{pattern}' \"{ShellSafeDir}/.env\" 2>/dev/null";
 
         string? output = null;
 
@@ -260,7 +269,7 @@ public sealed class Remote
 
     private int LaunchNativeSsh(string manageArgs, bool interactive)
     {
-        var remoteCmd = $"cd \"{_config.ProjectDir}\" && ./manage.sh {manageArgs}";
+        var remoteCmd = $"cd \"{ShellSafeDir}\" && ./manage.sh {manageArgs}";
 
         var sshArgs = new List<string>();
         if (interactive)
