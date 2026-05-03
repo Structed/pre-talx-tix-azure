@@ -55,6 +55,12 @@ if [ -f .env ]; then
     fi
 fi
 
+# Validate ENVIRONMENT (catch typos early)
+if [ -n "${ENVIRONMENT:-}" ] && [ "$ENVIRONMENT" != "prod" ] && [ "$ENVIRONMENT" != "dev" ]; then
+    echo "WARNING: ENVIRONMENT='${ENVIRONMENT}' is not a recognized value (expected 'prod' or 'dev')."
+    echo "  Treating as non-production (backups will be skipped)."
+fi
+
 # Parse optional tag overrides
 while [[ $# -gt 0 ]]; do
     case $1 in
