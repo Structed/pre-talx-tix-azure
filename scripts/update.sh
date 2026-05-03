@@ -55,10 +55,11 @@ if [ -f .env ]; then
     fi
 fi
 
-# Validate ENVIRONMENT (catch typos early)
+# Validate ENVIRONMENT (catch typos early — refuse to continue with bad values)
 if [ -n "${ENVIRONMENT:-}" ] && [ "$ENVIRONMENT" != "prod" ] && [ "$ENVIRONMENT" != "dev" ]; then
-    echo "WARNING: ENVIRONMENT='${ENVIRONMENT}' is not a recognized value (expected 'prod' or 'dev')."
-    echo "  Treating as non-production (backups will be skipped)."
+    echo "ERROR: ENVIRONMENT='${ENVIRONMENT}' is not a recognized value (expected 'prod' or 'dev')."
+    echo "  Fix the value in .env before running update."
+    exit 1
 fi
 
 # Parse optional tag overrides

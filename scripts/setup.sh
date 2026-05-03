@@ -40,8 +40,8 @@ if command -v ufw &> /dev/null; then
     echo "Firewall configured."
 fi
 
-# Configure swap (2 GB) if not already present
-if ! swapon --show | grep -q /swapfile; then
+# Configure swap (2 GB) if no swap is active
+if [ "$(swapon --show --noheadings | wc -l)" -eq 0 ]; then
     echo "Configuring 2 GB swap..."
     fallocate -l 2G /swapfile
     chmod 600 /swapfile
@@ -52,7 +52,7 @@ if ! swapon --show | grep -q /swapfile; then
     fi
     echo "Swap configured."
 else
-    echo "Swap already configured."
+    echo "Swap already active — skipping."
 fi
 
 # Enable automatic security updates
