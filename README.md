@@ -231,8 +231,8 @@ Run the full stack on your local machine without Azure, DNS, or TLS:
 # Start local dev environment (HTTP only)
 ./manage.sh dev
 
-# Or explicitly:
-docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local up
+# Or via the CLI:
+tixtalk dev up
 ```
 
 This gives you:
@@ -243,17 +243,15 @@ This gives you:
 
 The `.env.local` file comes with pre-filled dev credentials. Edit it to customize.
 
-To stop: `Ctrl+C` (or `docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local down`)
+To stop: `Ctrl+C` (or `./manage.sh dev down` / `tixtalk dev down`)
 
 ### First-time local setup
 
-After starting for the first time, run migrations:
+After starting for the first time, create admin accounts:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretix pretix migrate
-docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretix pretix rebuild
-docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretalx pretalx migrate
-docker compose -f docker-compose.yml -f docker-compose.local.yml --env-file .env.local exec pretalx pretalx rebuild
+tixtalk dev superuser
+# Or: ./manage.sh dev -- exec pretix pretix createsuperuser
 ```
 
 ## Staging / Dev Environment (Azure)
@@ -286,6 +284,8 @@ When done testing, destroy all dev resources:
 ```bash
 tixtalk teardown     # Select "dev" stack — removes VM, DNS, IP, everything
 ```
+
+> **Note:** `tixtalk teardown` requires a clone of this repository (it runs `pulumi destroy` from the `infra/` directory).
 
 ### Migration note
 

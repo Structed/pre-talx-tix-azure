@@ -1,5 +1,6 @@
 # Local development override — HTTP only, no TLS, no Cloudflare
-# Usage: docker compose -f docker-compose.yml -f docker-compose.local.yml up
+# Usage: ./manage.sh dev   (or: tixtalk dev up)
+# Note: the base compose file requires .env to exist; the wrapper commands handle this automatically.
 services:
   caddy:
     image: caddy:2.9-alpine

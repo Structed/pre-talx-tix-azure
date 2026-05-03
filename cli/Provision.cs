@@ -366,8 +366,10 @@ public static partial class Provision
         }
 
         // Derive hostnames using the actual Pulumi outputs or config
-        var ticketsHost = GetPulumiOutput("ticketsHost") ?? $"{(isDev ? "dev-" : "")}tickets.{domain}";
-        var talksHost = GetPulumiOutput("talksHost") ?? $"{(isDev ? "dev-" : "")}talks.{domain}";
+        var ticketsHostOutput = GetPulumiOutput("ticketsHost");
+        var ticketsHost = string.IsNullOrWhiteSpace(ticketsHostOutput) ? $"{(isDev ? "dev-" : "")}tickets.{domain}" : ticketsHostOutput;
+        var talksHostOutput = GetPulumiOutput("talksHost");
+        var talksHost = string.IsNullOrWhiteSpace(talksHostOutput) ? $"{(isDev ? "dev-" : "")}talks.{domain}" : talksHostOutput;
 
         AnsiConsole.MarkupLine($"  [green]Pretix:[/]  https://{ticketsHost}");
         AnsiConsole.MarkupLine($"  [green]Pretalx:[/] https://{talksHost}");

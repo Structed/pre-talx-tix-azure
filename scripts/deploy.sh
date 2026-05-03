@@ -23,8 +23,8 @@ fi
 load_env
 
 # Validate required config
-if [ -z "${DOMAIN:-}" ] || [ "$DOMAIN" = "yourdomain.com" ]; then
-    echo "ERROR: Set DOMAIN in .env to your actual domain."
+if [ -z "${DOMAIN:-}" ] || [ "$DOMAIN" = "yourdomain.com" ] || [ "$DOMAIN" = "localhost" ]; then
+    echo "ERROR: Set DOMAIN in .env to your actual domain (not 'localhost' or 'yourdomain.com')."
     exit 1
 fi
 
